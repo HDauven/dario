@@ -1,0 +1,11 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["Hein Dauven  <heindauven@gmail.com"]
+edition = "2021"
+
+[dependencies]
+piecrust = { version = "0.14.0" }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
