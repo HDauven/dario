@@ -1,6 +1,6 @@
 //! # Mario FSM lib
 //!
-//! The `mario_fsm` library demonstrates how a simple Finite State Machine (FSM) implementation works, in this case specifically for managing the various states Mario can be in in Super Mario.
+//! The `mario_fsm` library demonstrates how a simple Finite-State Machine (FSM) implementation works, in this case specifically for managing the various states Mario can be in in Super Mario.
 //! It allows for the simulation of Mario's state based on a given game event, like collecting a power-up or taking damage.
 //!
 //!  The library revolves around two enums: `MarioState`, representing Mario's possible states, and

@@ -1,6 +1,6 @@
 //! # Mario FSM contract
 //!
-//! This contract is a simple implementation of a Finite State Machine (FSM) using the Mario FSM library.
+//! This contract is a simple implementation of a Finite-State Machine (FSM) using the Mario FSM library.
 //! It manages the state of Mario in a blockchain context, and provides a function to read the state and handle events.
 #![no_std]
 
