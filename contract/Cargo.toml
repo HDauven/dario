@@ -1,0 +1,12 @@
+[package]
+name = "contract"
+version = "0.1.0"
+authors = ["Hein Dauven  <heindauven@gmail.com"]
+edition = "2021"
+
+[dependencies]
+mario_fsm = { path = "../mario_fsm" }
+piecrust-uplink = { version = "0.9.0", features = ["abi", "dlmalloc"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
