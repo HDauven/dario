@@ -8,6 +8,7 @@ extern crate alloc;
 
 // Import the Mario FSM library
 use mario_fsm::{transition, Event, MarioState};
+use piecrust_macros::contract;
 // Import Piecrust functionality, primarily for making calls and emitting events
 use piecrust_uplink as uplink;
 
@@ -21,6 +22,7 @@ static mut STATE: MarioFSM = MarioFSM {
     current_state: MarioState::Regular,
 };
 
+#[contract]
 impl MarioFSM {
     /// Reads the current state of MarioFSM and returns it as an integer
     ///
@@ -50,16 +52,4 @@ impl MarioFSM {
         // We could also choose to not emit an event if Mario's state did not change
         uplink::emit("state", self.current_state as u32);
     }
-}
-
-/// Expose `read_state` to external callers
-#[no_mangle]
-unsafe fn read_state(arg_len: u32) -> u32 {
-    uplink::wrap_call(arg_len, |_: ()| STATE.read_state())
-}
-
-/// Expose `handle_event` to external callers
-#[no_mangle]
-unsafe fn handle_event(arg_len: u32) -> u32 {
-    uplink::wrap_call(arg_len, |event: u32| STATE.handle_event(event))
 }

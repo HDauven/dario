@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 mario_fsm = { path = "../mario_fsm" }
+piecrust-macros = { git = "https://github.com/HDauven/piecrust-macros" }
 piecrust-uplink = { version = "0.9.0", features = ["abi", "dlmalloc"] }
 
 [lib]
