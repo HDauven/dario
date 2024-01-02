@@ -20,3 +20,5 @@ test: contract ## Run all tests
 	  --color=always
 
 MAX_COUNTER_CONTRACT_SIZE = 8192
+
+.PHONY: contract test

@@ -12,7 +12,7 @@ The project is organized in three main components:
 ## Prerequisites
 
 - [Rustup](https://rustup.rs/)
-- [Make] (https://www.gnu.org/software/make/)
+- [Make](https://www.gnu.org/software/make/)
 
 ## Build and test
 
