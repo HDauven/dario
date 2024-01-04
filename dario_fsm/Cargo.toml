@@ -1,5 +1,5 @@
 [package]
-name = "mario_fsm"
+name = "dario_fsm"
 version = "0.1.0"
 authors = ["Hein Dauven  <heindauven@gmail.com"]
 edition = "2021"

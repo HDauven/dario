@@ -5,7 +5,7 @@ authors = ["Hein Dauven  <heindauven@gmail.com"]
 edition = "2021"
 
 [dependencies]
-mario_fsm = { path = "../mario_fsm" }
+dario_fsm = { path = "../dario_fsm" }
 piecrust-macros = { git = "https://github.com/HDauven/piecrust-macros" }
 piecrust-uplink = { version = "0.9.0", features = ["abi", "dlmalloc"] }
 

@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "contract",
-    "mario_fsm",
+    "dario_fsm",
     "tests"
 ]
 resolver = "2"

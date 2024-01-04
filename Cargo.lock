@@ -166,7 +166,7 @@ checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 name = "contract"
 version = "0.1.0"
 dependencies = [
- "mario_fsm",
+ "dario_fsm",
  "piecrust-macros",
  "piecrust-uplink",
 ]
@@ -329,6 +329,10 @@ dependencies = [
  "libc",
  "rangemap",
 ]
+
+[[package]]
+name = "dario_fsm"
+version = "0.1.0"
 
 [[package]]
 name = "derive-hex"
@@ -553,10 +557,6 @@ checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "mario_fsm"
-version = "0.1.0"
 
 [[package]]
 name = "memchr"

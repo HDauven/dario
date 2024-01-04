@@ -19,7 +19,7 @@ test: contract ## Run all tests
 	  --all-features \
 	  --color=always
 	@cargo test \
-	  --manifest-path=mario_fsm/Cargo.toml \
+	  --manifest-path=dario_fsm/Cargo.toml \
 	  --color=always
 
 MAX_COUNTER_CONTRACT_SIZE = 8192
