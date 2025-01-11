@@ -5,7 +5,7 @@ authors = ["Hein Dauven  <heindauven@gmail.com"]
 edition = "2021"
 
 [dependencies]
-piecrust = { version = "0.14.0" }
+piecrust = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

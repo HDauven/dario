@@ -1,7 +1,8 @@
 [workspace]
-members = [
-    "contract",
-    "dario_fsm",
-    "tests"
-]
+members = ["contract", "dario_fsm", "tests"]
 resolver = "2"
+
+[workspace.dependencies]
+piecrust = { version = "0.27.0" }
+piecrust-macros = { git = "https://github.com/HDauven/piecrust-macros" }
+piecrust-uplink = { version = "0.17.3", features = ["abi", "dlmalloc"] }

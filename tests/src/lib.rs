@@ -13,7 +13,7 @@ mod tests {
         // Deploy the DarioFSM contract
         let dario_id = session.deploy(
             contract_bytecode!("contract"),
-            ContractData::builder(OWNER),
+            ContractData::builder().owner(OWNER),
             LIMIT,
         )?;
 
