@@ -5,7 +5,8 @@ authors = ["Hein Dauven  <heindauven@gmail.com"]
 edition = "2021"
 
 [dependencies]
-piecrust = { workspace = true }
+dusk-core = { workspace = true }
+dusk-vm = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

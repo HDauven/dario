@@ -3,6 +3,6 @@ members = ["contract", "dario_fsm", "tests"]
 resolver = "2"
 
 [workspace.dependencies]
-piecrust = { version = "0.27.0" }
-piecrust-macros = { git = "https://github.com/HDauven/piecrust-macros" }
-piecrust-uplink = { version = "0.17.3", features = ["abi", "dlmalloc"] }
+dusk-core = { version = "0.1.0", default-features = false }
+dusk-forge = "0.1.0"
+dusk-vm = { version = "0.1.0", default-features = false }

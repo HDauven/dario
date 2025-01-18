@@ -6,8 +6,8 @@ edition = "2021"
 
 [dependencies]
 dario_fsm = { path = "../dario_fsm" }
-piecrust-macros = { workspace = true }
-piecrust-uplink = { workspace = true }
+dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
+dusk-forge = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

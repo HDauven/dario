@@ -1,6 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use piecrust::{contract_bytecode, ContractData, ContractId, Error, Session, SessionData, VM};
+    #[macro_export]
+    macro_rules! contract_bytecode {
+        ($name:literal) => {
+            include_bytes!(concat!("../../target/stripped/", $name, ".wasm"))
+        };
+    }
+
+    use dusk_core::abi::ContractId;
+    use dusk_vm::{ContractData, Error, Session, VM};
 
     const OWNER: [u8; 32] = [0u8; 32];
     const LIMIT: u64 = 1_000_000;
@@ -8,7 +16,7 @@ mod tests {
     // Basic setup function that deals with VM instantiation, session setup and contract deployment
     fn setup() -> Result<(Session, ContractId), Error> {
         let vm = VM::ephemeral()?;
-        let mut session = vm.session(SessionData::builder())?;
+        let mut session = VM::genesis_session(&vm, 1);
 
         // Deploy the DarioFSM contract
         let dario_id = session.deploy(
