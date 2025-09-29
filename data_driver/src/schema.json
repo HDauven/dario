@@ -1,0 +1,16 @@
+{
+  "name": "data-driver",
+  "version": "0.1.0",
+  "description": "Data driver for Dario FSM Contract",
+  "inputs": {
+    "read_state": "()",
+    "handle_event": "u32"
+  },
+  "outputs": {
+    "read_state": "u32",
+    "handle_event": "()"
+  },
+  "events": {
+    "state": "u32"
+  }
+}

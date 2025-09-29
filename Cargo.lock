@@ -357,7 +357,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a38440ec581131c35809ddb8554f63ede8a051d238cfe974ff21c5aa6ee47a36"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
+ "dusk-bytes",
+ "ff",
+ "rand_core",
+ "rkyv",
+ "zeroize",
+]
+
+[[package]]
+name = "bls12_381-bls"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4e6b7c24701ff5167f336478ec29dc176455f5396f62b8f0951cc1fdddf249b"
+dependencies = [
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "ff",
  "rand_core",
@@ -441,7 +456,7 @@ name = "contract"
 version = "0.1.0"
 dependencies = [
  "dario_fsm",
- "dusk-core",
+ "dusk-core 1.3.0",
  "dusk-forge",
 ]
 
@@ -632,6 +647,13 @@ name = "dario_fsm"
 version = "0.1.0"
 
 [[package]]
+name = "data_driver"
+version = "0.1.0"
+dependencies = [
+ "dusk-data-driver",
+]
+
+[[package]]
 name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +716,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "dusk-bls12_381"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633aa835dd9e4db7ad5dc94a3f95d44ff5c6856ec3c83c15eb75366cfb5ee68a"
+dependencies = [
+ "blake2b_simd",
+ "bytecheck",
+ "dusk-bytes",
+ "ff",
+ "group",
+ "pairing",
+ "rand_core",
+ "rkyv",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
 name = "dusk-bytes"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -712,21 +752,55 @@ dependencies = [
  "ark-groth16",
  "ark-relations",
  "ark-serialize",
- "bls12_381-bls",
+ "bls12_381-bls 0.4.0",
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
- "dusk-jubjub",
+ "dusk-jubjub 0.14.1",
  "dusk-plonk",
- "dusk-poseidon",
+ "dusk-poseidon 0.40.0",
  "ff",
- "jubjub-schnorr",
- "phoenix-circuits",
- "phoenix-core",
- "piecrust-uplink",
- "poseidon-merkle",
+ "jubjub-schnorr 0.5.0",
+ "phoenix-circuits 0.5.0",
+ "phoenix-core 0.33.1",
+ "piecrust-uplink 0.17.3",
+ "poseidon-merkle 0.7.0",
  "rand",
  "rkyv",
+]
+
+[[package]]
+name = "dusk-core"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31cbf35a8632ecc33cdeb54b7866e2d615fb5b24fea7f4b43f2e1e62668afcbd"
+dependencies = [
+ "bls12_381-bls 0.5.1",
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
+ "dusk-bytes",
+ "dusk-jubjub 0.15.1",
+ "dusk-poseidon 0.41.0",
+ "ff",
+ "jubjub-schnorr 0.6.0",
+ "phoenix-circuits 0.6.0",
+ "phoenix-core 0.34.0",
+ "piecrust-uplink 0.18.0",
+ "poseidon-merkle 0.8.0",
+ "rand",
+ "rkyv",
+]
+
+[[package]]
+name = "dusk-data-driver"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c0a6fcb3d0161714e9b31c31464adbd25302ed62a9bd6e8bca0a047724e8ab"
+dependencies = [
+ "bytecheck",
+ "rkyv",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -735,7 +809,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "824b3e153f9bc2a9631d0ead6df31e66ba40b6125d931095c3e2672891e21c0c"
 dependencies = [
- "dusk-core",
+ "dusk-core 0.1.0",
  "proc-macro2",
  "quote",
  "syn 2.0.96",
@@ -750,7 +824,26 @@ dependencies = [
  "bitvec",
  "blake2b_simd",
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
+ "dusk-bytes",
+ "ff",
+ "group",
+ "rand_core",
+ "rkyv",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "dusk-jubjub"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "128c27bc829702d8e418eda75908234783db295ba19de45cf9b5133aa2e0f0b6"
+dependencies = [
+ "bitvec",
+ "blake2b_simd",
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "ff",
  "group",
@@ -779,9 +872,9 @@ checksum = "7fbb5ba0c35fd58d44ae5191e512bc9fef6fd06fff77cc500e5c98918abe08e5"
 dependencies = [
  "bytecheck",
  "cfg-if",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
- "dusk-jubjub",
+ "dusk-jubjub 0.14.1",
  "ff",
  "hashbrown 0.9.1",
  "itertools 0.9.0",
@@ -800,10 +893,21 @@ version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5acb405df5e90ca91e8ce3c5aa48117e27632396665aaf9e8950f2af971acfc9"
 dependencies = [
- "dusk-bls12_381",
- "dusk-jubjub",
+ "dusk-bls12_381 0.13.0",
+ "dusk-jubjub 0.14.1",
  "dusk-plonk",
- "dusk-safe",
+ "dusk-safe 0.2.1",
+]
+
+[[package]]
+name = "dusk-poseidon"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f66925505adc9db3671ebed59f5f2f196306efbe6ede8de9761e7830af5ddb84"
+dependencies = [
+ "dusk-bls12_381 0.14.2",
+ "dusk-jubjub 0.15.1",
+ "dusk-safe 0.3.0",
 ]
 
 [[package]]
@@ -811,6 +915,15 @@ name = "dusk-safe"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b1984b4b78f1f5d862dc482c73ab5f4e26bca829e8d30dfa443131c53933088"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
+name = "dusk-safe"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c3954d110d0d0f20555048d7171c2e6dfb54fd9a4220d30cc73dc66a88af42d"
 dependencies = [
  "zeroize",
 ]
@@ -824,8 +937,8 @@ dependencies = [
  "blake2b_simd",
  "blake3",
  "dusk-bytes",
- "dusk-core",
- "dusk-poseidon",
+ "dusk-core 0.1.0",
+ "dusk-poseidon 0.40.0",
  "lru",
  "piecrust",
  "rkyv",
@@ -1164,8 +1277,17 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c81b13ed2b476df1cd4618fe3a3d3463e521a21731954d47b186f6eaffc0ece6"
 dependencies = [
- "dusk-jubjub",
+ "dusk-jubjub 0.14.1",
  "dusk-plonk",
+]
+
+[[package]]
+name = "jubjub-elgamal"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c2b02b5859a6ebd729e4b7f9970963d3f3be4f0aebc700d0b2d392b9fd8201c"
+dependencies = [
+ "dusk-jubjub 0.15.1",
 ]
 
 [[package]]
@@ -1175,11 +1297,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c365e50a449633ca6032128be417f8298678c58ebee76dfe1f923ad29a07d646"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
- "dusk-jubjub",
+ "dusk-jubjub 0.14.1",
  "dusk-plonk",
- "dusk-poseidon",
+ "dusk-poseidon 0.40.0",
+ "ff",
+ "rand_core",
+ "rkyv",
+ "zeroize",
+]
+
+[[package]]
+name = "jubjub-schnorr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "008885a6d1b73ef18a827ad0faf7cf48d1c5a28d52a9e863b90a421a92799443"
+dependencies = [
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
+ "dusk-bytes",
+ "dusk-jubjub 0.15.1",
+ "dusk-poseidon 0.41.0",
  "ff",
  "rand_core",
  "rkyv",
@@ -1377,15 +1516,31 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c015f89a28b159853fa2b177991776ac40671a0f6415243f90a442b469a3282"
 dependencies = [
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
- "dusk-jubjub",
+ "dusk-jubjub 0.14.1",
  "dusk-plonk",
- "dusk-poseidon",
- "jubjub-elgamal",
- "jubjub-schnorr",
- "phoenix-core",
- "poseidon-merkle",
+ "dusk-poseidon 0.40.0",
+ "jubjub-elgamal 0.1.0",
+ "jubjub-schnorr 0.5.0",
+ "phoenix-core 0.33.1",
+ "poseidon-merkle 0.7.0",
+]
+
+[[package]]
+name = "phoenix-circuits"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42a8482526bf7bcb3a6d34ad171a26f495319a520b9eb8a68837d837e3b0cf9"
+dependencies = [
+ "dusk-bls12_381 0.14.2",
+ "dusk-bytes",
+ "dusk-jubjub 0.15.1",
+ "dusk-poseidon 0.41.0",
+ "jubjub-elgamal 0.2.0",
+ "jubjub-schnorr 0.6.0",
+ "phoenix-core 0.34.0",
+ "poseidon-merkle 0.8.0",
 ]
 
 [[package]]
@@ -1395,16 +1550,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1880ff8ba7cbb7e82843b98e3759134f5f7c9b0e5ffe9ff73703eced0360467"
 dependencies = [
  "aes-gcm",
- "bls12_381-bls",
+ "bls12_381-bls 0.4.0",
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
- "dusk-jubjub",
- "dusk-poseidon",
+ "dusk-jubjub 0.14.1",
+ "dusk-poseidon 0.40.0",
  "ff",
  "hkdf",
- "jubjub-elgamal",
- "jubjub-schnorr",
+ "jubjub-elgamal 0.1.0",
+ "jubjub-schnorr 0.5.0",
+ "rand",
+ "rkyv",
+ "sha2",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "phoenix-core"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b45ed942d9d166f7a45d16630529d68d68cfde7f37191d4646dfbe4b350b9cc"
+dependencies = [
+ "aes-gcm",
+ "bls12_381-bls 0.4.0",
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
+ "dusk-bytes",
+ "dusk-jubjub 0.15.1",
+ "dusk-poseidon 0.41.0",
+ "ff",
+ "hkdf",
+ "jubjub-elgamal 0.2.0",
+ "jubjub-schnorr 0.6.0",
  "rand",
  "rkyv",
  "sha2",
@@ -1426,7 +1605,7 @@ dependencies = [
  "dusk-wasmtime",
  "hex",
  "memmap2",
- "piecrust-uplink",
+ "piecrust-uplink 0.17.3",
  "rand",
  "rkyv",
  "tempfile",
@@ -1441,7 +1620,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e681bcea1ea7f82f8b66649da42d1fb7a23ab85f9d0acbf99fca4e560a2f1400"
 dependencies = [
  "bytecheck",
+ "rkyv",
+]
+
+[[package]]
+name = "piecrust-uplink"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f06841f29feebec770eb50944fca6fc5639ea7bae8100b71aa6bfca8cd8246b3"
+dependencies = [
+ "bytecheck",
  "dlmalloc",
+ "hex",
  "rkyv",
 ]
 
@@ -1470,11 +1660,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae0f84bdbdbeebfeeadfb7c28c07c14315713b9206a84e4d8ce310827691511e"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381",
+ "dusk-bls12_381 0.13.0",
  "dusk-bytes",
  "dusk-merkle",
  "dusk-plonk",
- "dusk-poseidon",
+ "dusk-poseidon 0.40.0",
+ "rkyv",
+]
+
+[[package]]
+name = "poseidon-merkle"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6316347b2cf759ff0303ad280008ac89a36ed9f970e4cdfd1585d8ba5ed60134"
+dependencies = [
+ "bytecheck",
+ "dusk-bls12_381 0.14.2",
+ "dusk-bytes",
+ "dusk-merkle",
+ "dusk-poseidon 0.41.0",
  "rkyv",
 ]
 
@@ -1691,18 +1895,27 @@ checksum = "3cb6eb87a131f756572d7fb904f6e7b68633f09cca868c5df1c4b8d1a694bbba"
 
 [[package]]
 name = "serde"
-version = "1.0.217"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
+checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
+name = "serde_core"
+version = "1.0.228"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.217"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9bf7cf98d04a2b28aead066b7496853d4779c9cc183c440dbac457641e19a0"
+checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1826,7 +2039,7 @@ dependencies = [
 name = "tests"
 version = "0.1.0"
 dependencies = [
- "dusk-core",
+ "dusk-core 1.3.0",
  "dusk-vm",
 ]
 
