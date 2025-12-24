@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "description": "Data driver for Dario FSM Contract",
   "inputs": {
-    "read_state": "()",
+    "current_state": "()",
+    "revive_count": "()",
     "handle_event": "u32"
   },
   "outputs": {
-    "read_state": "u32",
+    "current_state": "u32",
+    "revive_count": "u32",
     "handle_event": "()"
   },
   "events": {

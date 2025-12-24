@@ -45,6 +45,7 @@ pub enum Event {
     ChiliPepper,
     TableClothCape,
     TakeDamage,
+    Revive,
 }
 
 /// Transitions Dario's state based on the provided event.
@@ -81,6 +82,7 @@ pub fn transition(state: DarioState, event: Event) -> DarioState {
         (Cape, ChiliPepper) => Fire,
         (Regular, TakeDamage) => GameOver,
         (Super, TakeDamage) | (Fire, TakeDamage) | (Cape, TakeDamage) => Regular,
+        (GameOver, Revive) => Regular,
         (current_state, _) => current_state,
     }
 }

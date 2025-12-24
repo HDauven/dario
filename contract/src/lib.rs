@@ -19,6 +19,7 @@ pub mod dario_fsm_contract {
     /// There should only be one public struct
     pub struct DarioFSM {
         current_state: DarioState,
+        revive_count: u32,
     }
 
     impl DarioFSM {
@@ -26,14 +27,18 @@ pub mod dario_fsm_contract {
         pub fn new() -> Self {
             Self {
                 current_state: DarioState::Regular,
+                revive_count: 0,
             }
         }
 
-        /// Reads the current state of DarioFSM and returns it as an integer
-        ///
-        /// The state is returned as a `u32` corresponding to the `DarioState` enum
-        pub fn read_state(&self) -> u32 {
+        /// Returns the current state of Dario as a u32.
+        pub fn current_state(&self) -> u32 {
             self.current_state as u32
+        }
+
+        /// Returns the number of times Dario has been revived from GameOver.
+        pub fn revive_count(&self) -> u32 {
+            self.revive_count
         }
 
         /// Handles a game event and updates Dario's state accordingly
@@ -42,15 +47,22 @@ pub mod dario_fsm_contract {
         ///
         /// * `Event` - A `u32` corresponding to the `Event` enum
         pub fn handle_event(&mut self, event: u32) {
-            // TakeDamage is the highest value supported by the enum,
+            // Revive is the highest value supported by the enum,
             // we should not accept a higher value
-            if event > Event::TakeDamage as u32 {
+            if event > Event::Revive as u32 {
                 panic!("Invalid event number passed");
             }
             // This transmute should be safe given we check for the upper bound of `Event`
             let event = unsafe { core::mem::transmute::<u32, Event>(event) };
+            let previous_state = self.current_state;
             // Call the Dario FSM transition function to get a new state, if applicable
             let new_state = transition(self.current_state, event);
+
+            // Count revivals: only when transitioning out of GameOver via Revive.
+            if previous_state == DarioState::GameOver && event == Event::Revive {
+                self.revive_count = self.revive_count.saturating_add(1);
+            }
+
             // Set the contract state to the new state
             self.current_state = new_state;
             // Emit a "state" event to inform blockchain listeners of Dario's state after this transaction

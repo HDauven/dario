@@ -18,7 +18,8 @@ impl ConvertibleContract for ContractDriver {
     fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<alloc::vec::Vec<u8>, Error> {
         match fn_name {
             // Queries
-            "read_state" => json_to_rkyv::<()>(&json),
+            "current_state" => json_to_rkyv::<()>(&json),
+            "revive_count" => json_to_rkyv::<()>(&json),
 
             // Transactions
             "handle_event" => json_to_rkyv::<u32>(&json),
@@ -31,7 +32,8 @@ impl ConvertibleContract for ContractDriver {
     fn decode_input_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
         match fn_name {
             // Queries
-            "read_state" => rkyv_to_json::<()>(&rkyv),
+            "current_state" => rkyv_to_json::<()>(&rkyv),
+            "revive_count" => rkyv_to_json::<()>(&rkyv),
 
             // Transactions
             "handle_event" => rkyv_to_json::<u32>(&rkyv),
@@ -43,7 +45,8 @@ impl ConvertibleContract for ContractDriver {
 
     fn decode_output_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
         match fn_name {
-            "read_state" => rkyv_to_json::<u32>(&rkyv),
+            "current_state" => rkyv_to_json::<u32>(&rkyv),
+            "revive_count" => rkyv_to_json::<u32>(&rkyv),
             "handle_event" => rkyv_to_json::<()>(&rkyv),
 
             name => Err(Error::Unsupported(alloc::format!("fn_name {name}"))),
