@@ -8,14 +8,23 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["contract"]
+# Contract WASM build
 contract = ["dusk-core/abi-dlmalloc"]
-data-driver = ["dep:dusk-data-driver", "dusk-data-driver/wasm-export", "dusk-data-driver/alloc", "dusk-core/serde"]
+
+# Data-driver WASM build (off-chain JSON encoding/decoding)
+data-driver = [
+  "dusk-core/serde",
+  "dep:dusk-data-driver",
+  "dusk-data-driver/wasm-export",
+]
+
+# Data-driver with memory allocator exports for JavaScript environments
+data-driver-js = ["data-driver", "dusk-data-driver/alloc"]
 
 [dependencies]
 dario_fsm = { path = "../dario_fsm" }
 dusk-core = { workspace = true }
-dusk-wasm = { workspace = true }
+dusk-forge = { workspace = true }
 dusk-data-driver = { workspace = true, optional = true }
 
 # Pin to avoid edition2024 issues with older nightly

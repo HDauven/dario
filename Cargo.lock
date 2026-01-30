@@ -503,17 +503,8 @@ dependencies = [
  "dario_fsm",
  "dusk-core",
  "dusk-data-driver",
- "dusk-wasm",
+ "dusk-forge",
  "time-core",
-]
-
-[[package]]
-name = "contract-macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.111",
 ]
 
 [[package]]
@@ -887,6 +878,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "dusk-forge"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aaab80afb89550b1041ba2b1eb83ec4953fcf407053fc83e5876a82309ff21bd"
+dependencies = [
+ "dusk-forge-contract",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "dusk-forge-contract"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "592478dcfd192dd11968c3e04992610c0b59afe9f52dd9784614dc088cfa14e6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
+
+[[package]]
 name = "dusk-jubjub"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -980,15 +993,6 @@ dependencies = [
  "serde",
  "sha3",
  "wasmparser 0.240.0",
-]
-
-[[package]]
-name = "dusk-wasm"
-version = "0.1.0"
-dependencies = [
- "contract-macro",
- "serde",
- "serde_json",
 ]
 
 [[package]]

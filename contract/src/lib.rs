@@ -7,7 +7,7 @@
 //! extern wrappers, schema, and data-driver implementations.
 #![no_std]
 
-use dusk_wasm::contract;
+use dusk_forge::contract;
 
 /// The DarioFSM contract module.
 ///

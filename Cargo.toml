@@ -6,7 +6,7 @@ resolver = "2"
 dusk-core = { version = "1.4.0", default-features = false }
 dusk-data-driver = "0.3"
 dusk-vm = { version = "1.4.2", default-features = false }
-dusk-wasm = { path = "../wasm" }
+dusk-forge = "0.2.0"
 
 # Pin to avoid edition2024 issues
 time-core = "=0.1.6"
