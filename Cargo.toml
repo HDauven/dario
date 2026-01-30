@@ -1,9 +1,12 @@
 [workspace]
-members = ["contract", "dario_fsm", "data_driver", "tests"]
+members = ["contract", "dario_fsm", "tests"]
 resolver = "2"
 
 [workspace.dependencies]
 dusk-core = { version = "1.4.0", default-features = false }
 dusk-data-driver = "0.3"
-dusk-forge = "0.1.0"
 dusk-vm = { version = "1.4.2", default-features = false }
+dusk-forge = "0.2.0"
+
+# Pin to avoid edition2024 issues
+time-core = "=0.1.6"

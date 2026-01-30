@@ -2,14 +2,22 @@
 //!
 //! This contract is a simple implementation of a Finite-State Machine (FSM) using the Dario FSM library.
 //! It manages the state of Dario in a blockchain context, and provides a function to read the state and handle events.
+//!
+//! This contract uses the `#[contract]` macro from `dusk-wasm` to auto-generate
+//! extern wrappers, schema, and data-driver implementations.
 #![no_std]
-
-extern crate alloc;
 
 use dusk_forge::contract;
 
+/// The DarioFSM contract module.
+///
+/// The `#[contract]` macro generates:
+/// - Static `STATE` variable with the contract struct
+/// - Extern "C" wrapper functions for WASM export
+/// - `CONTRACT_SCHEMA` constant with metadata
+/// - `data_driver` module when compiled with the `data-driver` feature
 #[contract]
-pub mod dario_fsm_contract {
+mod dario_fsm_contract {
     // Import the Dario FSM library
     use dario_fsm::{transition, DarioState, Event};
     // Import Dusk Core functionality, primarily for making calls and emitting events
@@ -23,8 +31,8 @@ pub mod dario_fsm_contract {
     }
 
     impl DarioFSM {
-        /// Initialize the state with initial values
-        pub fn new() -> Self {
+        /// Creates a new DarioFSM instance with initial state Regular.
+        pub const fn new() -> Self {
             Self {
                 current_state: DarioState::Regular,
                 revive_count: 0,
