@@ -3,3 +3,4 @@ web/dist
 web/node_modules
 web/public/data_driver.wasm
 web/.env.local
+web/.vite
