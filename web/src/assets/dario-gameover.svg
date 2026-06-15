@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Dario – Game Over">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="25%" r="82%">
+      <stop offset="0%" stop-color="#2E2D30"/>
+      <stop offset="58%" stop-color="#27272A"/>
+      <stop offset="100%" stop-color="#101010"/>
+    </radialGradient>
+
+    <pattern id="lines" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <path d="M0 0 H12" stroke="#71B1FF" stroke-opacity=".07" stroke-width="1"/>
+    </pattern>
+
+    <filter id="softFade" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="1.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      .stroke{stroke:#2E2D30;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .ring{fill:none;stroke:#636167;stroke-width:2;opacity:.18}
+    </style>
+  </defs>
+
+  <!-- badge background -->
+  <circle cx="100" cy="100" r="92" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="url(#lines)" opacity=".35"/>
+  <circle class="ring" cx="100" cy="100" r="72"/>
+
+  <!-- warning halo -->
+  <circle cx="100" cy="100" r="84" fill="#71B1FF" opacity=".14"/>
+
+  <!-- glitch lines -->
+  <path d="M20 86 H78" stroke="#A8A5AF" stroke-opacity=".22" stroke-width="3" stroke-linecap="round"/>
+  <path d="M122 108 H180" stroke="#A8A5AF" stroke-opacity=".18" stroke-width="3" stroke-linecap="round"/>
+  <path d="M34 132 H66" stroke="#71B1FF" stroke-opacity=".14" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- shadow -->
+  <ellipse cx="100" cy="176" rx="46" ry="11" fill="#000" opacity=".30"/>
+
+  <!-- Dario (faded) -->
+  <g opacity=".88" filter="url(#softFade)">
+    <!-- head -->
+    <circle cx="100" cy="92" r="26" fill="#DDE0DF" class="stroke"/>
+
+    <!-- hat -->
+    <path d="M60 79 C60 52 80 36 100 36 C120 36 140 52 140 79 Z" fill="#636167" class="stroke"/>
+    <path d="M55 79 C70 94 130 94 145 79" fill="none" class="stroke"/>
+
+    <!-- emblem (dim) -->
+    <ellipse cx="100" cy="69" rx="10" ry="14" fill="#101010" opacity=".50"/>
+    <ellipse cx="104" cy="69" rx="4" ry="10" fill="#F2F0EB" opacity=".30"/>
+
+    <!-- X eyes -->
+    <path d="M88 88 L96 96" fill="none" class="stroke"/>
+    <path d="M96 88 L88 96" fill="none" class="stroke"/>
+    <path d="M104 88 L112 96" fill="none" class="stroke"/>
+    <path d="M112 88 L104 96" fill="none" class="stroke"/>
+
+    <!-- mustache -->
+    <path d="M83 106 C88 100 95 100 100 106 C105 100 112 100 117 106" fill="none" class="stroke"/>
+
+    <!-- shirt -->
+    <rect x="72" y="118" width="56" height="46" rx="18" fill="#908E94" class="stroke"/>
+
+    <!-- arms -->
+    <path d="M72 134 L58 146" fill="none" class="stroke"/>
+    <circle cx="55" cy="149" r="6.5" fill="#DDE0DF" class="stroke"/>
+    <path d="M128 134 L142 146" fill="none" class="stroke"/>
+    <circle cx="145" cy="149" r="6.5" fill="#DDE0DF" class="stroke"/>
+
+    <!-- overalls -->
+    <rect x="78" y="126" width="44" height="44" rx="14" fill="#2E2D30" class="stroke"/>
+
+    <!-- straps -->
+    <path d="M84 126 L92 118" stroke="#A8A5AF" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+    <path d="M116 126 L108 118" stroke="#A8A5AF" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+    <circle cx="90" cy="132" r="5" fill="#A8A5AF" class="stroke"/>
+    <circle cx="110" cy="132" r="5" fill="#A8A5AF" class="stroke"/>
+
+    <!-- legs -->
+    <rect x="84" y="170" width="16" height="20" rx="6" fill="#2E2D30" class="stroke"/>
+    <rect x="100" y="170" width="16" height="20" rx="6" fill="#2E2D30" class="stroke"/>
+
+    <!-- shoes -->
+    <path d="M78 190 C86 197 98 197 106 190" stroke="#101010" stroke-width="6" stroke-linecap="round" opacity=".55" fill="none"/>
+    <path d="M94 190 C102 197 114 197 122 190" stroke="#101010" stroke-width="6" stroke-linecap="round" opacity=".55" fill="none"/>
+  </g>
+
+  <!-- skull mark -->
+  <g>
+    <circle cx="160" cy="52" r="18" fill="#101010" opacity="0.55"/>
+    <circle cx="160" cy="52" r="14" fill="#F2F0EB" opacity="0.92"/>
+    <circle cx="155" cy="50" r="2.5" fill="#101010"/>
+    <circle cx="165" cy="50" r="2.5" fill="#101010"/>
+    <path d="M154 58 C158 62 162 62 166 58" stroke="#101010" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

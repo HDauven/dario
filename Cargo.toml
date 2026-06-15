@@ -1,12 +1,14 @@
 [workspace]
-members = ["contract", "dario_fsm", "tests"]
+members = ["contract", "dario_fsm", "moonlight_router", "tests"]
 resolver = "2"
 
 [workspace.dependencies]
-dusk-core = { version = "1.4.0", default-features = false }
-dusk-data-driver = "0.3"
-dusk-vm = { version = "1.4.2", default-features = false }
-dusk-forge = "0.2.0"
+dusk-core = { version = "=1.6.0", default-features = false }
+dusk-data-driver = "=0.3.2-alpha.1"
+dusk-bytes = "=0.1.7"
+dusk-vm = { version = "=1.6.0", default-features = false }
+dusk-forge = "=0.3.0"
+bs58 = { version = "0.5.1", default-features = false, features = ["alloc"] }
 
 # Pin to avoid edition2024 issues
 time-core = "=0.1.6"

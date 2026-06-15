@@ -1,0 +1,18 @@
+[package]
+name = "moonlight_router"
+version = "0.1.0"
+authors = ["Hein Dauven  <heindauven@gmail.com"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+contract = ["dusk-core/abi-dlmalloc"]
+data-driver = []
+data-driver-js = ["data-driver"]
+
+[dependencies]
+dusk-core = { workspace = true }
+dusk-forge = { workspace = true }
+time-core = "=0.1.6"

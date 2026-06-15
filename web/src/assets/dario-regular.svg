@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Dario – Regular">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="25%" r="82%">
+      <stop offset="0%" stop-color="#2E2D30"/>
+      <stop offset="58%" stop-color="#27272A"/>
+      <stop offset="100%" stop-color="#101010"/>
+    </radialGradient>
+
+    <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#71B1FF"/>
+      <stop offset="100%" stop-color="#7AB6D9"/>
+    </linearGradient>
+
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F2F0EB"/>
+      <stop offset="100%" stop-color="#EDEAF3"/>
+    </linearGradient>
+
+    <linearGradient id="shirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EDEAF3"/>
+      <stop offset="100%" stop-color="#E2DFE9"/>
+    </linearGradient>
+
+    <pattern id="lines" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <path d="M0 0 H12" stroke="#71B1FF" stroke-opacity=".10" stroke-width="1"/>
+    </pattern>
+
+    <filter id="softGlow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feColorMatrix in="b" type="matrix" values="1 0 0 0 0   0 1 0 0 0   0 0 1 0 0   0 0 0 .35 0" result="g"/>
+      <feMerge>
+        <feMergeNode in="g"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      .stroke{stroke:#2E2D30;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .ring{fill:none;stroke:#636167;stroke-width:2;opacity:.18}
+      .ink{fill:#101010}
+    </style>
+  </defs>
+
+  <!-- badge background -->
+  <circle cx="100" cy="100" r="92" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="url(#lines)" opacity=".35"/>
+  <circle class="ring" cx="100" cy="100" r="72"/>
+  <path class="ring" d="M34 110 C54 78 86 70 112 76 C142 82 158 102 166 124" stroke-dasharray="4 8"/>
+  <path class="ring" d="M30 86 C52 96 68 112 80 130" stroke-dasharray="3 7"/>
+  <circle cx="168" cy="76" r="3" fill="#71B1FF" opacity=".55"/>
+  <circle cx="44" cy="56" r="2.5" fill="#7AB6D9" opacity=".5"/>
+
+  <!-- shadow -->
+  <ellipse cx="100" cy="176" rx="46" ry="11" fill="#000" opacity=".28"/>
+
+  <!-- Dario -->
+  <g filter="url(#softGlow)">
+    <!-- head -->
+    <circle cx="100" cy="92" r="26" fill="url(#skin)" class="stroke"/>
+
+    <!-- hat -->
+    <path d="M60 79 C60 52 80 36 100 36 C120 36 140 52 140 79 Z" fill="url(#hat)" class="stroke"/>
+    <path d="M55 79 C70 94 130 94 145 79" fill="none" class="stroke"/>
+
+    <!-- emblem (Dusk-ish eye) -->
+    <ellipse cx="100" cy="69" rx="10" ry="14" fill="#101010" opacity=".85"/>
+    <ellipse cx="104" cy="69" rx="4" ry="10" fill="#F2F0EB" opacity=".95"/>
+
+    <!-- eyes -->
+    <circle class="ink" cx="92" cy="92" r="3"/>
+    <circle class="ink" cx="108" cy="92" r="3"/>
+
+    <!-- nose -->
+    <circle cx="100" cy="99" r="6" fill="#E2DFE9" opacity=".95" class="stroke"/>
+
+    <!-- mustache -->
+    <path d="M83 106 C88 100 95 100 100 106 C105 100 112 100 117 106" fill="none" class="stroke"/>
+
+    <!-- shirt -->
+    <rect x="72" y="118" width="56" height="46" rx="18" fill="url(#shirt)" class="stroke"/>
+
+    <!-- arms + gloves -->
+    <path d="M72 134 L58 146" fill="none" class="stroke"/>
+    <circle cx="55" cy="149" r="6.5" fill="#F2F0EB" class="stroke"/>
+
+    <path d="M128 134 L142 146" fill="none" class="stroke"/>
+    <circle cx="145" cy="149" r="6.5" fill="#F2F0EB" class="stroke"/>
+
+    <!-- overalls -->
+    <rect x="78" y="126" width="44" height="44" rx="14" fill="#27272A" class="stroke"/>
+
+    <!-- straps -->
+    <path d="M84 126 L92 118" stroke="#7AB6D9" stroke-width="6" stroke-linecap="round"/>
+    <path d="M116 126 L108 118" stroke="#7AB6D9" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="90" cy="132" r="5" fill="#7AB6D9" class="stroke"/>
+    <circle cx="110" cy="132" r="5" fill="#7AB6D9" class="stroke"/>
+
+    <!-- legs -->
+    <rect x="84" y="170" width="16" height="20" rx="6" fill="#27272A" class="stroke"/>
+    <rect x="100" y="170" width="16" height="20" rx="6" fill="#27272A" class="stroke"/>
+
+    <!-- shoes -->
+    <path d="M78 190 C86 197 98 197 106 190" stroke="#101010" stroke-width="6" stroke-linecap="round" opacity=".7" fill="none"/>
+    <path d="M94 190 C102 197 114 197 122 190" stroke="#101010" stroke-width="6" stroke-linecap="round" opacity=".7" fill="none"/>
+  </g>
+</svg>

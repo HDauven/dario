@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dario - On-chain Game</title>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+
+  <body>
+    <main class="arcadeShell">
+      <section class="cabinet" aria-label="Dario arcade cabinet">
+        <header class="marquee">
+          <div class="brand">
+            <div class="mark" aria-hidden="true"></div>
+            <div class="brandText">
+              <h1>Dario</h1>
+              <div class="subtitle">Testnet Arcade</div>
+            </div>
+          </div>
+
+          <div class="marqueeHud" aria-label="Game status">
+            <div id="hudState" class="hudBadge">
+              <span class="hudLabel">State</span>
+              <span class="hudValue">-</span>
+            </div>
+            <div id="hudRevives" class="hudBadge">
+              <span class="hudLabel">Revives</span>
+              <span class="hudValue">-</span>
+            </div>
+            <div id="hudAccount" class="hudBadge hudAccount">
+              <span class="hudLabel">Account</span>
+              <span class="hudValue">Not connected</span>
+            </div>
+          </div>
+
+          <div class="walletPanel" aria-label="Wallet connection">
+            <span class="walletKicker">Wallet</span>
+            <dusk-connect-button
+              id="connectBtn"
+              network="testnet"
+              theme="dark"
+              variant="solid"
+              size="sm"
+            ></dusk-connect-button>
+          </div>
+        </header>
+
+        <div class="cabinetBody">
+          <section class="screenFrame" aria-label="Dario game screen">
+            <div class="speaker speakerLeft" aria-hidden="true"></div>
+            <div class="speaker speakerRight" aria-hidden="true"></div>
+
+            <div class="screenGlass">
+              <div class="stage" aria-label="Dario stage">
+                <img id="darioSprite" class="sprite" src="/src/assets/dario-regular-new.png" alt="Dario" />
+
+                <div id="startOverlay" class="startOverlay" hidden>
+                  <div class="overlayPanel">
+                    <div class="startTitle">Press Start</div>
+                    <div id="startText" class="startText">Connect Wallet to play on Testnet.</div>
+                    <button id="startBtn" class="btn btn-primary btn-big" type="button">Connect Wallet</button>
+                  </div>
+                </div>
+
+                <div id="pendingOverlay" class="pendingOverlay" hidden>
+                  <div class="pendingCard">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <div id="pendingText" class="pendingText">Waiting for finalization...</div>
+                    <div class="progress" aria-hidden="true">
+                      <div id="progressBar" class="progressBar"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="deadOverlay" class="deadOverlay" hidden>
+                  <div class="overlayPanel">
+                    <div class="deadTitle">Game Over</div>
+                    <button id="reviveBig" class="btn btn-primary btn-big" type="button" data-event="4">
+                      Revive Dario
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="hint" class="hint">-</div>
+          </section>
+
+          <aside class="stateRail" aria-label="Dario forms">
+            <div class="railTitle">Forms</div>
+            <div class="formPill formRegular">
+              <img class="formThumb" src="/src/assets/dario-regular-new.png" alt="" aria-hidden="true" />
+              <span>Regular</span>
+            </div>
+            <div class="formPill formSuper">
+              <img class="formThumb" src="/src/assets/dario-super-new.png" alt="" aria-hidden="true" />
+              <span>Super</span>
+            </div>
+            <div class="formPill formFire">
+              <img class="formThumb" src="/src/assets/dario-fire-new.png" alt="" aria-hidden="true" />
+              <span>Fire</span>
+            </div>
+            <div class="formPill formCape">
+              <img class="formThumb" src="/src/assets/dario-cape-new.png" alt="" aria-hidden="true" />
+              <span>Cape</span>
+            </div>
+            <div class="formPill formGameOver">
+              <img class="formThumb" src="/src/assets/dario-gameover-new.png" alt="" aria-hidden="true" />
+              <span>Game Over</span>
+            </div>
+          </aside>
+        </div>
+
+        <section class="controlDeck" aria-label="Arcade controls">
+          <div class="joystick" aria-hidden="true">
+            <div class="stick"></div>
+          </div>
+          <div class="actions" id="actions">
+            <button class="action" type="button" data-event="0">
+              <span class="icon icon-coffee" aria-hidden="true"></span>
+              <span class="txt">Espresso</span>
+            </button>
+            <button class="action" type="button" data-event="1">
+              <span class="icon icon-chili" aria-hidden="true"></span>
+              <span class="txt">Chili</span>
+            </button>
+            <button class="action" type="button" data-event="2">
+              <span class="icon icon-cape" aria-hidden="true"></span>
+              <span class="txt">Cape</span>
+            </button>
+            <button class="action action-danger" type="button" data-event="3">
+              <span class="icon icon-damage" aria-hidden="true"></span>
+              <span class="txt">Damage</span>
+            </button>
+
+            <button class="action action-primary" type="button" data-event="4" hidden>
+              <span class="icon icon-revive" aria-hidden="true"></span>
+              <span class="txt">Revive</span>
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
