@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dario - On-chain Game</title>
+    <script type="module" crossorigin src="./assets/index-BpXJ1E_v.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dk-wnwFq.css">
+  </head>
+
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div class="brandText">
+          <div class="titleRow">
+            <h1>Dario</h1>
+          </div>
+          <div class="subtitle">An on-chain finite state machine</div>
+        </div>
+      </div>
+
+      <div class="topbarRight">
+        <dusk-connect-button id="connectBtn" network="testnet" variant="solid"></dusk-connect-button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="game">
+        <section class="gameColumn">
+          <p class="eyebrow">Game</p>
+          <div class="stage" aria-label="Dario stage">
+            <img id="darioSprite" class="sprite" src="./assets/dario-regular-new-C7_av__A.png" alt="Dario" />
+
+            <div class="hud" aria-label="HUD">
+              <div id="hudState" class="hudBadge">-</div>
+              <div id="hudRevives" class="hudBadge">Revives -</div>
+              <div id="hudAccount" class="hudBadge hudAccount">Not connected</div>
+            </div>
+
+            <div id="startOverlay" class="startOverlay" hidden>
+              <div class="startTitle">PRESS START</div>
+              <div id="startText" class="startText">Connect Wallet to play on Testnet.</div>
+              <button id="startBtn" class="btn btn-primary btn-big" type="button">Connect Wallet</button>
+            </div>
+
+            <div id="pendingOverlay" class="pendingOverlay" hidden>
+              <div class="pendingCard">
+                <div class="spinner" aria-hidden="true"></div>
+                <div id="pendingText" class="pendingText">Waiting for finalization...</div>
+                <div class="progress" aria-hidden="true">
+                  <div id="progressBar" class="progressBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="deadOverlay" class="deadOverlay" hidden>
+              <div class="deadTitle">GAME OVER</div>
+              <button id="reviveBig" class="btn btn-primary btn-big" type="button" data-event="4">
+                Revive Dario
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div class="panel" aria-label="Actions">
+          <p class="eyebrow">Actions</p>
+          <div class="actions" id="actions">
+            <button class="action" type="button" data-event="0">
+              <span class="icon" aria-hidden="true">☕</span>
+              <span class="txt">Espresso</span>
+            </button>
+            <button class="action" type="button" data-event="1">
+              <span class="icon" aria-hidden="true">🌶️</span>
+              <span class="txt">Chili</span>
+            </button>
+            <button class="action" type="button" data-event="2">
+              <span class="icon" aria-hidden="true">🧣</span>
+              <span class="txt">Cape</span>
+            </button>
+            <button class="action action-danger" type="button" data-event="3">
+              <span class="icon" aria-hidden="true">💥</span>
+              <span class="txt">Damage</span>
+            </button>
+
+            <button class="action action-primary" type="button" data-event="4" hidden>
+              <span class="icon" aria-hidden="true">💙</span>
+              <span class="txt">Revive</span>
+            </button>
+          </div>
+
+          <div id="hint" class="hint muted">-</div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
