@@ -1,0 +1,18 @@
+{
+  "name": "dario-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:driver": "mkdir -p public && cp ../target/stripped/data_driver.wasm public/data_driver.wasm",
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "@dusk/connect": "npm:@jsr/dusk__connect@^0.1.0"
+  }
+}

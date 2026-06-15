@@ -48,6 +48,21 @@ pub enum Event {
     Revive,
 }
 
+impl TryFrom<u32> for Event {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            value if value == Self::Espresso as u32 => Ok(Self::Espresso),
+            value if value == Self::ChiliPepper as u32 => Ok(Self::ChiliPepper),
+            value if value == Self::TableClothCape as u32 => Ok(Self::TableClothCape),
+            value if value == Self::TakeDamage as u32 => Ok(Self::TakeDamage),
+            value if value == Self::Revive as u32 => Ok(Self::Revive),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Transitions Dario's state based on the provided event.
 ///
 /// # Arguments

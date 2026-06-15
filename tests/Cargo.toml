@@ -6,7 +6,10 @@ edition = "2021"
 
 [dependencies]
 dusk-core = { workspace = true }
+dusk-bytes = { workspace = true }
 dusk-vm = { workspace = true }
+rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
+bs58 = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
