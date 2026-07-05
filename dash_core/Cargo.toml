@@ -1,0 +1,10 @@
+[package]
+name = "dash_core"
+version = "0.1.0"
+edition = "2021"
+description = "Deterministic Dario Dash simulation core, shared by the browser game and the RISC Zero guest"
+
+[dependencies]
+dario_fsm = { path = "../dario_fsm" }
+
+[dev-dependencies]

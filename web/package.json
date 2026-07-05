@@ -13,6 +13,7 @@
     "vite": "^8.0.16"
   },
   "dependencies": {
-    "@dusk/connect": "npm:@jsr/dusk__connect@^0.1.0"
+    "@dusk/connect": "npm:@jsr/dusk__connect@^0.1.0",
+    "snarkjs": "^0.7.6"
   }
 }

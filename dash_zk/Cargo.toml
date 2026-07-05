@@ -1,0 +1,7 @@
+[package]
+name = "dash_zk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dario_fsm = { path = "../dario_fsm" }

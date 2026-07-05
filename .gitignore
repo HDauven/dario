@@ -4,3 +4,9 @@ web/node_modules
 web/public/data_driver.wasm
 web/.env.local
 web/.vite
+web/src/dash-wasm
+zk/target
+web/public/zk
+zk_browser/build
+zk_browser/ptau
+zk_browser/node_modules
