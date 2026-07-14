@@ -2,7 +2,7 @@
 //! finished [`ZkSim`] run. Shared by the native exporter binary and the
 //! browser wasm wrapper, so the witness layout is identical everywhere.
 
-use crate::witness::{RunWitness, MAX_FORM_EVENTS, T_NONE};
+use crate::witness::{RunWitness, T_NONE};
 use crate::*;
 use alloc::string::{String, ToString};
 use alloc::vec;
@@ -110,7 +110,7 @@ impl J {
         J("{\n".to_string())
     }
     fn num(&mut self, name: &str, v: i64) {
-        let _ = write!(self.0, "\"{}\": \"{}\",\n", name, v);
+        let _ = writeln!(self.0, "\"{}\": \"{}\",", name, v);
     }
     fn arr(&mut self, name: &str, vals: &[i64]) {
         let _ = write!(self.0, "\"{}\": [", name);
@@ -133,7 +133,7 @@ impl J {
         self.0.push_str("],\n");
     }
     fn arr2(&mut self, name: &str, vals: &[Vec<i64>]) {
-        let _ = write!(self.0, "\"{}\": [\n", name);
+        let _ = writeln!(self.0, "\"{}\": [", name);
         for (i, row) in vals.iter().enumerate() {
             if i > 0 {
                 self.0.push_str(",\n");

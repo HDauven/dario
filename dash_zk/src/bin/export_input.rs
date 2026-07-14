@@ -33,7 +33,7 @@ fn autopilot_run(seed: u64) -> ZkSim {
             0
         };
         // Fire on a rising edge every other tick (no-op unless in Fire form).
-        if t % 2 == 0 {
+        if t.is_multiple_of(2) {
             input |= INPUT_FIRE;
         }
         prev = input;

@@ -45,6 +45,9 @@ pub const INPUT_MASK: u8 = INPUT_JUMP | INPUT_FIRE;
 
 /// Ranked runs are capped at 2 minutes.
 pub const MAX_TICKS: u32 = 2 * 60 * TICK_HZ; // 3600
+/// Ranked score ceiling. The circuit clamps to this value and accepts a
+/// non-death early finish only once the cap is reached.
+pub const MAX_RANKED_SCORE: u64 = 1_500;
 
 // --- Physics constants (30 Hz) ---
 /// Gravity, fp/tick² (≈ 2600 px/s²).
@@ -112,6 +115,7 @@ pub const MAX_JUMPS: usize = 160;
 pub const MAX_PICKUPS: usize = 56;
 pub const MAX_KILLS: usize = 32;
 pub const MAX_DAMAGES: usize = 8;
+pub const MAX_FORM_EVENTS: usize = MAX_PICKUPS + MAX_DAMAGES;
 
 /// Total scrolled distance after `t` ticks, fp100. Exact closed form of
 /// `Σ_{u=1..t} min(BASE + ACCEL·u, MAX)`.
@@ -124,6 +128,15 @@ pub fn d100(t: u32) -> i64 {
             + (SPEED_ACCEL100 / 2) * SPEED_CAP_TICK * (SPEED_CAP_TICK + 1);
         base + SPEED_MAX100 * (t - SPEED_CAP_TICK)
     }
+}
+
+pub fn raw_ranked_score(t: u32, pickups: u32, kills: u32) -> u64 {
+    let distance_score = (d100(t) / (i64::from(FP) * 100 * 50)) as u64;
+    distance_score + u64::from(pickups) * 50 + u64::from(kills) * 25
+}
+
+pub fn ranked_score(t: u32, pickups: u32, kills: u32) -> u64 {
+    raw_ranked_score(t, pickups, kills).min(MAX_RANKED_SCORE)
 }
 
 /// Scroll speed at tick `t`, fp100/tick.
@@ -185,7 +198,7 @@ impl Rng {
         Self(seed ^ 0x9e37_79b9_7f4a_7c15)
     }
 
-    pub fn next(&mut self) -> u64 {
+    pub fn next_u64(&mut self) -> u64 {
         let mut x = self.0;
         x ^= x >> 12;
         x ^= x << 25;
@@ -195,7 +208,7 @@ impl Rng {
     }
 
     pub fn below(&mut self, n: u32) -> u32 {
-        (self.next() % u64::from(n)) as u32
+        (self.next_u64() % u64::from(n)) as u32
     }
 }
 
@@ -255,9 +268,7 @@ impl Schedule {
         let mut spawn_in: u32 = 42; // 1.4 s
         let mut item_in: u32 = 48; // 1.6 s
         for t in 1..=MAX_TICKS {
-            if spawn_in > 0 {
-                spawn_in -= 1;
-            }
+            spawn_in = spawn_in.saturating_sub(1);
             if spawn_in == 0 {
                 let roll = rng.below(100);
                 if roll < 60 {
@@ -298,9 +309,7 @@ impl Schedule {
                 let gap = 22 + rng.below(28);
                 spawn_in = ((i64::from(gap) * SPEED_BASE100) / s100(t)) as u32 + 8;
             }
-            if item_in > 0 {
-                item_in -= 1;
-            }
+            item_in = item_in.saturating_sub(1);
             if item_in == 0 {
                 let kind = rng.below(3) as i32;
                 let high = rng.below(2) == 1;
@@ -490,9 +499,17 @@ impl ZkSim {
 
     fn protected(&self, t: u32) -> bool {
         match self.last_damage {
-            Some(td) => t >= td + 1 && t <= td + INVULN_TICKS,
+            Some(td) => t > td && t <= td + INVULN_TICKS,
             None => false,
         }
+    }
+
+    fn update_score(&mut self, t: u32) {
+        self.score = ranked_score(t, self.pickups_n, self.kills_n);
+    }
+
+    fn can_record_form_event(&self) -> bool {
+        self.pickup_count + self.damage_count < MAX_FORM_EVENTS
     }
 
     /// Advance one tick. Input bits: 1 = jump, 2 = fire.
@@ -546,9 +563,10 @@ impl ZkSim {
         // Fire (edge-triggered, Fire form, cooldown).
         if pressed & INPUT_FIRE != 0
             && self.form == DarioState::Fire
-            && self
-                .last_fire
-                .map_or(true, |tf| t >= tf + FIREBALL_COOLDOWN)
+            && match self.last_fire {
+                Some(tf) => t >= tf + FIREBALL_COOLDOWN,
+                None => true,
+            }
         {
             // Drop expired fireballs to free slots (capacity never binds:
             // lifetime 39 < 3 * cooldown 14 is false, but 4 slots suffice).
@@ -578,7 +596,11 @@ impl ZkSim {
             let x_overlap = x < PLAYER_RIGHT100 && x + (ITEM_SIZE as i64) * FP100 > PLAYER_LEFT100;
             let iy = it.y_px * FP;
             let y_overlap = ptop < iy + ITEM_SIZE * FP && pbot > iy;
-            if x_overlap && y_overlap && self.pickup_count < MAX_PICKUPS {
+            if x_overlap
+                && y_overlap
+                && self.pickup_count < MAX_PICKUPS
+                && self.can_record_form_event()
+            {
                 self.item_taken[i] = true;
                 self.pickups[self.pickup_count] = PickupEv {
                     tick: t,
@@ -694,10 +716,10 @@ impl ZkSim {
             }
         }
         if let Some((class, idx)) = collide {
-            // Past the damage-event capacity the circuit cannot express a
+            // Past the shared form-event capacity the circuit cannot express a
             // touched obstacle, so the collision is ignored entirely to keep
             // the sim and witness consistent (same rationale as the kill cap).
-            if self.damage_count < self.damages.len() {
+            if self.damage_count < self.damages.len() && self.can_record_form_event() {
                 if self.protected(t) {
                     let status = ObsStatus::InvulnTouch(t);
                     if class == 0 {
@@ -725,18 +747,15 @@ impl ZkSim {
             }
         }
 
-        // Score.
-        self.score = (d100(t) / (i64::from(FP) * 100 * 50)) as u64
-            + u64::from(self.pickups_n) * 50
-            + u64::from(self.kills_n) * 25;
+        self.update_score(t);
 
-        if self.ticks >= MAX_TICKS {
+        if self.score >= MAX_RANKED_SCORE || self.ticks >= MAX_TICKS {
             self.over = true;
         }
     }
 
     fn push_damage(&mut self, t: u32, class: u32, idx: u32, invuln: bool) {
-        if self.damage_count < self.damages.len() {
+        if self.damage_count < self.damages.len() && self.can_record_form_event() {
             self.damages[self.damage_count] = DamageEv {
                 tick: t,
                 class,
@@ -956,6 +975,41 @@ mod tests {
             acc += s100(t);
             assert_eq!(d100(t), acc, "tick {t}");
         }
+    }
+
+    #[test]
+    fn ranked_score_is_capped() {
+        assert_eq!(ranked_score(1, 0, 0), raw_ranked_score(1, 0, 0));
+        assert!(raw_ranked_score(MAX_TICKS, MAX_PICKUPS as u32, MAX_KILLS as u32) > 1_500);
+        assert_eq!(
+            ranked_score(MAX_TICKS, MAX_PICKUPS as u32, MAX_KILLS as u32),
+            MAX_RANKED_SCORE
+        );
+    }
+
+    #[test]
+    fn sim_ends_when_ranked_score_reaches_cap() {
+        let mut sim = ZkSim::new(1);
+        sim.pickups_n = MAX_PICKUPS as u32;
+        sim.kills_n = MAX_KILLS as u32;
+
+        sim.tick(0);
+
+        assert!(sim.over());
+        assert_eq!(sim.score(), MAX_RANKED_SCORE);
+    }
+
+    #[test]
+    fn pickups_and_damage_share_the_form_event_capacity() {
+        let mut sim = ZkSim::new(1);
+        sim.pickup_count = MAX_PICKUPS;
+        sim.damage_count = MAX_DAMAGES;
+
+        assert_eq!(sim.pickup_count + sim.damage_count, MAX_FORM_EVENTS);
+        assert!(!sim.can_record_form_event());
+
+        sim.damage_count -= 1;
+        assert!(sim.can_record_form_event());
     }
 
     #[test]

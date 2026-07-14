@@ -195,8 +195,8 @@ impl Sim {
             invuln: 0,
             fire_cd: 0,
             prev_input: 0,
-            spawn_in: 84,  // 1.4 s
-            item_in: 96,   // 1.6 s
+            spawn_in: 84, // 1.4 s
+            item_in: 96,  // 1.6 s
             obstacles: [Obstacle::default(); MAX_OBSTACLES],
             items: [Item::default(); MAX_ITEMS],
             fireballs: [Fireball::default(); MAX_FIREBALLS],
@@ -459,7 +459,10 @@ impl Sim {
             if !self.obstacles[oi].active {
                 continue;
             }
-            if overlap(&self.player_hitbox(), &Self::obstacle_hitbox(&self.obstacles[oi])) {
+            if overlap(
+                &self.player_hitbox(),
+                &Self::obstacle_hitbox(&self.obstacles[oi]),
+            ) {
                 self.hit_player();
                 if self.over {
                     return;
@@ -529,10 +532,16 @@ impl Sim {
             push(out, [0, o.kind, o.x / FP, o.y / FP, o.w, o.h]);
         }
         for it in self.items.iter().filter(|i| i.active) {
-            push(out, [1, it.kind, it.x / FP, it.y / FP, ITEM_SIZE, ITEM_SIZE]);
+            push(
+                out,
+                [1, it.kind, it.x / FP, it.y / FP, ITEM_SIZE, ITEM_SIZE],
+            );
         }
         for f in self.fireballs.iter().filter(|f| f.active) {
-            push(out, [2, 0, f.x / FP, f.y / FP, FIREBALL_SIZE, FIREBALL_SIZE]);
+            push(
+                out,
+                [2, 0, f.x / FP, f.y / FP, FIREBALL_SIZE, FIREBALL_SIZE],
+            );
         }
         n
     }
@@ -578,8 +587,7 @@ mod tests {
         let b = replay(42, &trace);
         assert_eq!(a, b);
         let c = replay(43, &trace);
-        // Different seed should (essentially always) differ in outcome.
-        assert!(a != c || a.score != c.score || true);
+        assert_ne!(a, c);
     }
 
     #[test]

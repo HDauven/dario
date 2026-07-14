@@ -135,15 +135,13 @@ mod tests {
         let score: u64 = std::env::var("ZK_SCORE").unwrap().parse().unwrap();
         let ticks: u32 = std::env::var("ZK_TICKS").unwrap().parse().unwrap();
         let proof_hex =
-            std::fs::read_to_string(std::env::var("ZK_PROOF_HEX_FILE").unwrap())
-                .unwrap();
+            std::fs::read_to_string(std::env::var("ZK_PROOF_HEX_FILE").unwrap()).unwrap();
         let proof_hex = proof_hex.trim();
         let proof: Vec<u8> = (0..proof_hex.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&proof_hex[i..i + 2], 16).unwrap())
             .collect();
-        let bytes =
-            rkyv::to_bytes::<_, 4096>(&(seed, score, ticks, proof)).unwrap();
+        let bytes = rkyv::to_bytes::<_, 4096>(&(seed, score, ticks, proof)).unwrap();
         let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
         println!("{hex}");
     }
@@ -426,13 +424,14 @@ mod tests {
         let (mut session, dario_id) = setup_with_moonlight_router()?;
         let wallet = moonlight_account(1);
 
-        // Inflated score: journal no longer matches the proof.
+        // Changed score within the ranked range: journal no longer matches
+        // the proof, so this exercises proof binding rather than range checks.
         let result = routed_submit_run(
             &mut session,
             wallet,
             dario_id,
             FIXTURE_GAME_SEED,
-            999_999,
+            FIXTURE_SCORE + 1,
             FIXTURE_TICKS,
             FIXTURE_PROOF.to_vec(),
         );
@@ -546,13 +545,15 @@ mod tests {
         let (mut session, dario_id) = setup_with_moonlight_router()?;
         let wallet = moonlight_account(1);
 
-        // Inflated score: public inputs no longer match the proof.
+        // Changed score within the ranked range: public inputs no longer
+        // match the proof, so this exercises proof binding rather than range
+        // checks.
         let result = routed_submit_zk_run(
             &mut session,
             wallet,
             dario_id,
             ZK_FIXTURE_GAME_SEED,
-            999_999,
+            ZK_FIXTURE_SCORE + 1,
             ZK_FIXTURE_TICKS,
             ZK_FIXTURE_PROOF.to_vec(),
         );
@@ -581,6 +582,36 @@ mod tests {
             ZK_FIXTURE_PROOF.to_vec(),
         );
         assert!(result.is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    pub fn test_proven_run_paths_reject_scores_above_ranked_cap() -> Result<(), Error> {
+        let (mut session, dario_id) = setup_with_moonlight_router()?;
+        let score = dash_zk::MAX_RANKED_SCORE + 1;
+
+        assert!(routed_submit_run(
+            &mut session,
+            moonlight_account(1),
+            dario_id,
+            FIXTURE_GAME_SEED,
+            score,
+            FIXTURE_TICKS,
+            FIXTURE_PROOF.to_vec(),
+        )
+        .is_err());
+
+        assert!(routed_submit_zk_run(
+            &mut session,
+            moonlight_account(2),
+            dario_id,
+            ZK_FIXTURE_GAME_SEED,
+            score,
+            ZK_FIXTURE_TICKS,
+            ZK_FIXTURE_PROOF.to_vec(),
+        )
+        .is_err());
 
         Ok(())
     }

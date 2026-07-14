@@ -524,10 +524,9 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         eact[e] * (1 - etLe[e].out) === 0;
     }
 
-    // run end: survived => ticks = 3600; died => ticks = fatal-entry tick.
+    // Run-end constraints are applied after score calculation so score-capped
+    // non-death runs can finish before the two-minute tick cap.
     signal died <== fs[NE][4];
-    (1 - died) * (ticks - 3600) === 0;
-    died * (tfAcc[NE] - ticks) === 0;
 
     // ================= section 2: jumps =================
     component jtb[NJ];
@@ -1360,7 +1359,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     st === sumS3;
     signal sp <== sumPick;
 
-    // score = floor(d100(T) / 1280000) + 50*pickups + 25*kills.
+    // score = min(1500, floor(d100(T) / 1280000) + 50*pickups + 25*kills).
     component qb = Num2Bits(12);
     qb.in <== scoreQ;
     component rb = Num2Bits(21);
@@ -1370,7 +1369,23 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     rlt.in[1] <== 1280000;
     rlt.out === 1;
     dT.out === 1280000 * scoreQ + scoreR;
-    score === scoreQ + 50 * sp + 25 * sk;
+    signal rawScore <== scoreQ + 50 * sp + 25 * sk;
+    component rawScoreBits = Num2Bits(13);
+    rawScoreBits.in <== rawScore;
+    component rawScoreLtCap = LessThan(13);
+    rawScoreLtCap.in[0] <== rawScore;
+    rawScoreLtCap.in[1] <== 1500;
+    score === rawScoreLtCap.out * (rawScore - 1500) + 1500;
+
+    component scoreCapped = IsEqual();
+    scoreCapped.in[0] <== score;
+    scoreCapped.in[1] <== 1500;
+
+    // run end: survived => ticks = 3600; died => ticks = fatal-entry tick;
+    // score-capped non-death runs may end early.
+    signal naturalFinish <== (1 - died) * (1 - scoreCapped.out);
+    naturalFinish * (ticks - 3600) === 0;
+    died * (tfAcc[NE] - ticks) === 0;
 }
 
 component main {public [score, ticks, groundCount, batCount, itemCount, gspawn, gw, gh, bspawn, bbase, bphase, ispawn, ikind, iy, acct]} = DashZK(128, 24, 56, 160, 64, 32);

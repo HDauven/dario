@@ -271,7 +271,7 @@ async function refreshLeaderboard() {
     const rows = await dario.call.leaderboard();
     elRankingPanel.hidden = false;
     const entries = (rows || [])
-      .map((r) => ({ account: r[0], score: Number(r[1]), plays: Number(r[2]) }))
+      .map((r) => ({ account: String(r[0]), score: Number(r[1]), plays: Number(r[2]) }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
     const self = connected() ? String(selectedAccount()) : null;
@@ -280,7 +280,19 @@ async function refreshLeaderboard() {
       const li = document.createElement("li");
       if (self && String(e.account) === self) li.classList.add("rankingSelf");
       const acct = `${e.account.slice(0, 8)}…${e.account.slice(-8)}`;
-      li.innerHTML = `<span class="rankPos">${i + 1}</span><span class="rankAcct" title="${e.account}">${acct}</span><span class="rankScore">${e.score}</span><span class="rankPlays">${e.plays} run${e.plays === 1 ? "" : "s"}</span>`;
+      const values = [
+        ["rankPos", i + 1],
+        ["rankAcct", acct],
+        ["rankScore", e.score],
+        ["rankPlays", `${e.plays} run${e.plays === 1 ? "" : "s"}`],
+      ];
+      for (const [className, value] of values) {
+        const span = document.createElement("span");
+        span.className = className;
+        span.textContent = String(value);
+        if (className === "rankAcct") span.title = String(e.account);
+        li.appendChild(span);
+      }
       elRankingList.appendChild(li);
     }
     elRankingEmpty.hidden = entries.length > 0;

@@ -2268,6 +2268,7 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "bs58 0.5.1",
+ "dash_zk",
  "dusk-bytes",
  "dusk-core",
  "dusk-vm",

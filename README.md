@@ -20,6 +20,11 @@ The project is organized in these main components:
 
 - [Rustup](https://rustup.rs/)
 - [Make](https://www.gnu.org/software/make/)
+- [Node.js](https://nodejs.org/) 24 or newer
+- [`wasm-tools`](https://github.com/bytecodealliance/wasm-tools) and
+  [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)
+- [`circom`](https://github.com/iden3/circom) 2.2.2, only needed when
+  regenerating browser proving artifacts
 
 ## Build and test
 
@@ -53,7 +58,8 @@ The app uses [`@dusk/connect`](https://github.com/dusk-network/connect) to
 connect to Dusk Wallet and submit public Moonlight contract calls. The game
 runs on the deterministic `dash_zk` simulation compiled to wasm, recording
 your inputs (one byte per 30 Hz tick) as it plays. The game is free to play
-without a wallet.
+without a wallet. Ranked browser-proven runs end after two minutes or once the
+score reaches 1500.
 
 ## ZK proof of gameplay — in the browser
 
@@ -73,13 +79,22 @@ leaving the browser**. Click **Prove In-Browser & Submit** after a run:
    and verifies the proof with `verify_groth16_bn254`. Only then is the
    score recorded.
 
-Proving artifacts are built once (`circom` + `snarkjs` setup in
-`zk_browser/`) and copied into the app with `make zk-assets`. To regenerate
-the contract's verification key assets after a circuit change:
+The canonical circuit wasm and proving key are published as the
+`zk-browser-v1` release assets. `make zk-assets` verifies their pinned SHA-256
+digests, downloads them when missing, and copies them into the app. `make web`
+and `make web-build` run that step automatically, so Pages and local builds use
+the same proving key as the deployed contract.
+
+After a circuit change, run `make zk-browser-setup` to compile the circuit,
+create a fresh proving key, and regenerate the contract verifier assets. Then
+publish both files under a new immutable artifact tag and update the tag and
+digests at the top of the `Makefile` before rebuilding and redeploying the
+contract. The files to publish and hash are:
 
 ```bash
-zk/target/release/dash-prover export-snarkjs-vkey \
-  zk_browser/build/dash/vkey.json contract/assets dash_zk
+sha256sum \
+  zk_browser/build/dash/dash_zk_js/dash_zk.wasm \
+  zk_browser/build/dash/dash_zk_final.zkey
 ```
 
 ## ZK proof of gameplay — RISC Zero (native)
@@ -130,7 +145,8 @@ make web-build
 
 ## GitHub Pages
 
-The Pages workflow builds the contract data-driver and publishes `web/dist`.
+The Pages workflow builds the contract data-driver and dash wasm wrapper,
+downloads the pinned browser proving artifacts, and publishes `web/dist`.
 Configure these repository variables before deploying:
 
 - `DARIO_CONTRACT_ID`: the deployed Dario contract id on Testnet.

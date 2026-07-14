@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "prepare:driver": "mkdir -p public && cp ../target/stripped/data_driver.wasm public/data_driver.wasm",
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview"
   },
   "devDependencies": {
     "vite": "^8.0.16"
@@ -15,5 +15,8 @@
   "dependencies": {
     "@dusk/connect": "npm:@jsr/dusk__connect@^0.1.0",
     "snarkjs": "^0.7.6"
+  },
+  "overrides": {
+    "underscore": "1.13.8"
   }
 }

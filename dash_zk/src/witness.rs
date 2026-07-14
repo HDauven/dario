@@ -48,7 +48,7 @@ pub struct FormEv {
     pub form_after: u32,
 }
 
-pub const MAX_FORM_EVENTS: usize = MAX_PICKUPS + MAX_DAMAGES;
+pub const MAX_FORM_EVENTS: usize = crate::MAX_FORM_EVENTS;
 
 #[derive(Clone)]
 pub struct RunWitness {
@@ -110,41 +110,48 @@ impl RunWitness {
         let t_end = sim.ticks();
 
         let mut ground = [ObsWitness::default(); MAX_GROUND];
-        for i in 0..sched.ground_count {
+        for (i, ow) in ground.iter_mut().enumerate().take(sched.ground_count) {
             let g = sched.ground[i];
-            let win = overlap_window(g.spawn_tick, 4 * FP100, (g.w as i64 - 4) * FP100, t_end);
-            ground[i] = obs_witness(win, sim.ground_status()[i], t_end);
+            let horizon = match sim.ground_status()[i] {
+                ObsStatus::Killed(_) => T_NONE - 1,
+                _ => t_end,
+            };
+            let win = overlap_window(g.spawn_tick, 4 * FP100, (g.w as i64 - 4) * FP100, horizon);
+            *ow = obs_witness(win, sim.ground_status()[i], t_end);
         }
-        for i in sched.ground_count..MAX_GROUND {
-            ground[i].status = 4;
-            ground[i].w1 = T_NONE;
-            ground[i].w2 = T_NONE;
-            ground[i].a = T_NONE;
-            ground[i].b = 0;
-            ground[i].event_tick = T_NONE;
-            ground[i].jump_idx = u32::MAX;
+        for ow in ground.iter_mut().skip(sched.ground_count) {
+            ow.status = 4;
+            ow.w1 = T_NONE;
+            ow.w2 = T_NONE;
+            ow.a = T_NONE;
+            ow.b = 0;
+            ow.event_tick = T_NONE;
+            ow.jump_idx = u32::MAX;
         }
 
         let mut bats = [ObsWitness::default(); MAX_BATS];
-        for i in 0..sched.bat_count {
+        for (i, ow) in bats.iter_mut().enumerate().take(sched.bat_count) {
             let b = sched.bats[i];
-            let win = overlap_window(b.spawn_tick, 0, (BAT_W as i64) * FP100, t_end);
-            bats[i] = obs_witness(win, sim.bat_status()[i], t_end);
+            let horizon = match sim.bat_status()[i] {
+                ObsStatus::Killed(_) => T_NONE - 1,
+                _ => t_end,
+            };
+            let win = overlap_window(b.spawn_tick, 0, (BAT_W as i64) * FP100, horizon);
+            *ow = obs_witness(win, sim.bat_status()[i], t_end);
         }
-        for i in sched.bat_count..MAX_BATS {
-            bats[i].status = 4;
-            bats[i].w1 = T_NONE;
-            bats[i].w2 = T_NONE;
-            bats[i].a = T_NONE;
-            bats[i].b = 0;
-            bats[i].event_tick = T_NONE;
-            bats[i].jump_idx = u32::MAX;
+        for ow in bats.iter_mut().skip(sched.bat_count) {
+            ow.status = 4;
+            ow.w1 = T_NONE;
+            ow.w2 = T_NONE;
+            ow.a = T_NONE;
+            ow.b = 0;
+            ow.event_tick = T_NONE;
+            ow.jump_idx = u32::MAX;
         }
 
         // Covering jump for ground obstacles that need clearance: the jump
         // whose airborne ticks [tick, tick + n_land - 1] contain [a, b].
-        for i in 0..sched.ground_count {
-            let ow = &mut ground[i];
+        for ow in ground.iter_mut().take(sched.ground_count) {
             if ow.b < ow.a {
                 ow.jump_idx = u32::MAX;
                 continue;
@@ -152,7 +159,7 @@ impl RunWitness {
             let mut found = u32::MAX;
             for j in 0..sim.jump_count {
                 let jp = sim.jumps[j];
-                if jp.tick <= ow.a && ow.b <= jp.tick + jp.n_land - 1 {
+                if jp.tick <= ow.a && ow.b < jp.tick + jp.n_land {
                     found = j as u32;
                     break;
                 }
@@ -288,6 +295,35 @@ mod tests {
         sim
     }
 
+    fn firing_autopilot_run(seed: u64) -> ZkSim {
+        let mut sim = ZkSim::new(seed);
+        let mut snap = [0i32; 40 * 6];
+        let mut prev = 0u8;
+        let mut t = 0u32;
+        while !sim.over() && sim.ticks() < MAX_TICKS {
+            let n = sim.snapshot(&mut snap);
+            let mut want_jump = false;
+            for rec in snap[..n].chunks(6) {
+                if rec[0] == 0 && rec[1] != KIND_BAT {
+                    let dist = rec[2] - (PLAYER_X + PLAYER_W);
+                    want_jump |= (0..=60).contains(&dist);
+                }
+            }
+            let mut input = if want_jump && prev & INPUT_JUMP == 0 {
+                INPUT_JUMP
+            } else {
+                0
+            };
+            if t.is_multiple_of(2) {
+                input |= INPUT_FIRE;
+            }
+            prev = input;
+            sim.tick(input);
+            t += 1;
+        }
+        sim
+    }
+
     #[test]
     fn windows_bracket_actual_overlap() {
         let sim = autopilot_run(42);
@@ -370,12 +406,25 @@ mod tests {
         for i in 0..sim.schedule().bat_count {
             let ow = w.bats[i];
             if ow.status != 4 && ow.b >= ow.a {
-                assert!(
-                    ow.b - ow.a + 1 <= 8,
-                    "bat window too long: {}",
-                    ow.b - ow.a + 1
-                );
+                assert!(ow.b - ow.a < 8, "bat window too long: {}", ow.b - ow.a + 1);
             }
+        }
+    }
+
+    #[test]
+    fn capped_run_keeps_witnesses_for_pre_overlap_kills() {
+        let sim = firing_autopilot_run(19);
+        assert_eq!(sim.score(), MAX_RANKED_SCORE);
+
+        let witness = RunWitness::extract(&sim);
+        for kill in witness.kills.iter().take(witness.kill_count) {
+            let obstacle = if kill.target_class == 0 {
+                witness.ground[kill.target_idx as usize]
+            } else {
+                witness.bats[kill.target_idx as usize]
+            };
+            assert_eq!(obstacle.status, 1);
+            assert_eq!(obstacle.event_tick, kill.hit_tick);
         }
     }
 }

@@ -210,11 +210,14 @@ mod dario_fsm_contract {
         /// `score` over `ticks` ticks, for the calling Moonlight account.
         ///
         /// Panics if the caller is not a Moonlight transaction, the seed was
-        /// already used by this account, or the proof does not verify.
+        /// already used by this account, the score exceeds the ranked cap, or
+        /// the proof does not verify.
         pub fn submit_run(&mut self, seed: u64, score: u64, ticks: u32, proof: Vec<u8>) {
             let pk = moonlight_public_key()
                 .expect("submit_run must be called directly via a Moonlight transaction");
             let account: Account = pk.to_bytes();
+
+            assert!(score <= dash_zk::MAX_RANKED_SCORE, "score out of range");
 
             assert!(
                 self.used_seeds.insert((account, seed)),
@@ -257,8 +260,8 @@ mod dario_fsm_contract {
         /// so the proof cannot be replayed by anyone else.
         ///
         /// Panics if the caller is not a Moonlight transaction, the seed was
-        /// already used by this account, `ticks` is out of range, or the
-        /// proof does not verify.
+        /// already used by this account, `score`/`ticks` are out of range, or
+        /// the proof does not verify.
         pub fn submit_zk_run(&mut self, seed: u64, score: u64, ticks: u32, proof: Vec<u8>) {
             let pk = moonlight_public_key()
                 .expect("submit_zk_run must be called directly via a Moonlight transaction");
@@ -271,9 +274,10 @@ mod dario_fsm_contract {
 
             // The circuit assumes the contract enforces public-input ranges.
             assert!(
-                ticks >= 1 && ticks <= dash_zk::MAX_TICKS,
+                (1..=dash_zk::MAX_TICKS).contains(&ticks),
                 "ticks out of range"
             );
+            assert!(score <= dash_zk::MAX_RANKED_SCORE, "score out of range");
 
             let inputs = zk_public_inputs(seed, score, ticks, &account);
             let prepared = prepare_inputs(ZK_GAMMA_ABC, &inputs);
@@ -317,15 +321,9 @@ mod dario_fsm_contract {
             let mut entries: Vec<_> = self
                 .proven
                 .iter()
-                .map(|(account, s)| {
-                    (
-                        bs58::encode(account).into_string(),
-                        s.best_score,
-                        s.runs,
-                    )
-                })
+                .map(|(account, s)| (bs58::encode(account).into_string(), s.best_score, s.runs))
                 .collect();
-            entries.sort_by(|a, b| b.1.cmp(&a.1));
+            entries.sort_by_key(|entry| core::cmp::Reverse(entry.1));
             entries.truncate(10);
             entries
         }

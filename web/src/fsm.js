@@ -37,4 +37,3 @@ export function transition(state, event) {
   if (state === GameOver && event === Revive) return Regular;
   return state;
 }
-
