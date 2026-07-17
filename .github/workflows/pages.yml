@@ -47,7 +47,7 @@ jobs:
 
       - name: Build web app
         env:
-          VITE_DARIO_CONTRACT_ID: ${{ vars.DARIO_CONTRACT_ID || '0x2b150c6bf957207f89ef111d10121384d3177a966ef02b6e1cb0b01cce1b4365' }}
+          VITE_DARIO_CONTRACT_ID: ${{ vars.DARIO_CONTRACT_ID || '0xa453d27f8f7d02ca5104917dbba1b818a35b4d73830350e9dc6ed081055c015b' }}
           VITE_DUSK_NODE_URL: ${{ vars.DUSK_NODE_URL || 'https://testnet.nodes.dusk.network' }}
         run: make web-build
 

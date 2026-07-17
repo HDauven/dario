@@ -874,7 +874,7 @@ dusk-connect-button::part(network) {
 
 .txt {
   display: grid;
-  min-height: 2.1em;
+  min-height: 28px;
   place-items: center;
   max-width: 100%;
   color: #fff7e2;
