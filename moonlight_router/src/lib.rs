@@ -5,6 +5,9 @@ use dusk_forge::contract;
 
 #[contract]
 mod moonlight_router {
+    extern crate alloc;
+    use alloc::vec::Vec;
+
     use dusk_core::abi::{self, ContractId};
 
     pub struct MoonlightRouter;
@@ -27,6 +30,18 @@ mod moonlight_router {
         pub fn revive_count(&self, contract: ContractId) -> u32 {
             abi::call::<_, u32>(contract, "revive_count", &())
                 .unwrap_or_else(|err| panic!("MoonlightRouter: {err:?}"))
+        }
+
+        pub fn submit_run(&mut self, args: (ContractId, u64, u64, u32, Vec<u8>)) {
+            let (contract, seed, score, ticks, proof) = args;
+            abi::call::<_, ()>(contract, "submit_run", &(seed, score, ticks, proof))
+                .unwrap_or_else(|err| panic!("MoonlightRouter: {err:?}"));
+        }
+
+        pub fn submit_zk_run(&mut self, args: (ContractId, u64, u64, u32, Vec<u8>)) {
+            let (contract, seed, score, ticks, proof) = args;
+            abi::call::<_, ()>(contract, "submit_zk_run", &(seed, score, ticks, proof))
+                .unwrap_or_else(|err| panic!("MoonlightRouter: {err:?}"));
         }
     }
 

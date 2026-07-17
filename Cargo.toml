@@ -1,5 +1,5 @@
 [workspace]
-members = ["contract", "dario_fsm", "moonlight_router", "tests"]
+members = ["contract", "dario_fsm", "dash_core", "dash_web", "dash_zk", "moonlight_router", "tests"]
 resolver = "2"
 
 [workspace.dependencies]

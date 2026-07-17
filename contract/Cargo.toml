@@ -23,7 +23,10 @@ data-driver-js = ["data-driver", "dusk-data-driver/alloc"]
 
 [dependencies]
 dario_fsm = { path = "../dario_fsm" }
-dusk-core = { workspace = true }
+dash_zk = { path = "../dash_zk" }
+dusk-core = { workspace = true, features = ["groth16"] }
+ark-ff = { version = "0.4", default-features = false }
+sha2 = { version = "0.10", default-features = false }
 dusk-bytes = { workspace = true }
 dusk-forge = { workspace = true }
 dusk-data-driver = { workspace = true, optional = true }

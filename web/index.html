@@ -24,8 +24,8 @@
               <span class="hudLabel">State</span>
               <span class="hudValue">-</span>
             </div>
-            <div id="hudRevives" class="hudBadge">
-              <span class="hudLabel">Revives</span>
+            <div id="hudRuns" class="hudBadge">
+              <span class="hudLabel">Runs</span>
               <span class="hudValue">-</span>
             </div>
             <div id="hudAccount" class="hudBadge hudAccount">
@@ -52,33 +52,31 @@
             <div class="speaker speakerRight" aria-hidden="true"></div>
 
             <div class="screenGlass">
-              <div class="stage" aria-label="Dario stage">
-                <img id="darioSprite" class="sprite" src="/src/assets/dario-regular-new.png" alt="Dario" />
+              <div class="stage stage-game" aria-label="Dario Dash game">
+                <canvas id="gameCanvas" class="gameCanvas" width="960" height="540"></canvas>
 
-                <div id="startOverlay" class="startOverlay" hidden>
+                <div id="startOverlay" class="startOverlay">
                   <div class="overlayPanel">
-                    <div class="startTitle">Press Start</div>
-                    <div id="startText" class="startText">Connect Wallet to play on Testnet.</div>
-                    <button id="startBtn" class="btn btn-primary btn-big" type="button">Connect Wallet</button>
+                    <div class="startTitle">Dario Dash</div>
+                    <div id="startText" class="startText">Play free, or connect your wallet to commit runs on Testnet.</div>
+                    <button id="playBtn" class="btn btn-primary btn-big" type="button">Start Run</button>
+                    <button id="connectStartBtn" class="btn btn-big" type="button" hidden>Connect Wallet</button>
                   </div>
                 </div>
 
-                <div id="pendingOverlay" class="pendingOverlay" hidden>
-                  <div class="pendingCard">
-                    <div class="spinner" aria-hidden="true"></div>
-                    <div id="pendingText" class="pendingText">Waiting for finalization...</div>
-                    <div class="progress" aria-hidden="true">
-                      <div id="progressBar" class="progressBar"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div id="deadOverlay" class="deadOverlay" hidden>
+                <div id="gameOverOverlay" class="deadOverlay" hidden>
                   <div class="overlayPanel">
                     <div class="deadTitle">Game Over</div>
-                    <button id="reviveBig" class="btn btn-primary btn-big" type="button" data-event="4">
-                      Revive Dario
+                    <div id="overScore" class="overScore">Score 0</div>
+                    <div id="overStats" class="overStats"></div>
+                    <div id="commitStatus" class="commitStatus"></div>
+                    <button id="downloadRunBtn" class="btn btn-big" type="button" hidden>
+                      Download Run File
                     </button>
+                    <button id="submitProofBtn" class="btn btn-primary btn-big" type="button" hidden>
+                      Prove In-Browser &amp; Submit
+                    </button>
+                    <button id="againBtn" class="btn btn-big" type="button">Dash Again</button>
                   </div>
                 </div>
               </div>
@@ -112,32 +110,33 @@
           </aside>
         </div>
 
+        <section id="rankingPanel" class="ranking" aria-label="On-chain leaderboard" hidden>
+          <div class="railTitle">On-Chain Ranking</div>
+          <ol id="rankingList" class="rankingList"></ol>
+          <div id="rankingEmpty" class="rankingEmpty" hidden>No proven runs yet. Be the first!</div>
+        </section>
+
         <section class="controlDeck" aria-label="Arcade controls">
           <div class="joystick" aria-hidden="true">
             <div class="stick"></div>
           </div>
-          <div class="actions" id="actions">
-            <button class="action" type="button" data-event="0">
+          <div class="actions controlsLegend" id="controls">
+            <div class="action legend">
               <span class="icon icon-coffee" aria-hidden="true"></span>
-              <span class="txt">Espresso</span>
-            </button>
-            <button class="action" type="button" data-event="1">
+              <span class="txt">Espresso = Super Jump</span>
+            </div>
+            <div class="action legend">
               <span class="icon icon-chili" aria-hidden="true"></span>
-              <span class="txt">Chili</span>
-            </button>
-            <button class="action" type="button" data-event="2">
+              <span class="txt">Chili = Fireballs (F)</span>
+            </div>
+            <div class="action legend">
               <span class="icon icon-cape" aria-hidden="true"></span>
-              <span class="txt">Cape</span>
-            </button>
-            <button class="action action-danger" type="button" data-event="3">
+              <span class="txt">Cape = Glide (hold jump)</span>
+            </div>
+            <div class="action legend action-danger">
               <span class="icon icon-damage" aria-hidden="true"></span>
-              <span class="txt">Damage</span>
-            </button>
-
-            <button class="action action-primary" type="button" data-event="4" hidden>
-              <span class="icon icon-revive" aria-hidden="true"></span>
-              <span class="txt">Revive</span>
-            </button>
+              <span class="txt">Space / Tap = Jump</span>
+            </div>
           </div>
         </section>
       </section>
