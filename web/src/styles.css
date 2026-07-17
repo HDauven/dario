@@ -768,7 +768,7 @@ dusk-connect-button::part(network) {
 .actions {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(86px, 1fr));
+  grid-template-columns: repeat(4, minmax(86px, 1fr));
   gap: 12px;
 }
 
@@ -873,17 +873,18 @@ dusk-connect-button::part(network) {
 }
 
 .txt {
+  display: grid;
+  min-height: 2.1em;
+  place-items: center;
   max-width: 100%;
-  overflow: hidden;
   color: #fff7e2;
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1.1;
   text-align: center;
-  text-overflow: ellipsis;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
 .deadOverlay,
@@ -1090,7 +1091,7 @@ dusk-connect-button::part(network) {
   }
 
   .actions {
-    grid-template-columns: repeat(5, minmax(72px, 1fr));
+    grid-template-columns: repeat(4, minmax(72px, 1fr));
   }
 }
 
