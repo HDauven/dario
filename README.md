@@ -1,6 +1,32 @@
-# Dario FSM
+# Dario Dash
 
-This repository contains a [Finite-State Machine](https://en.wikipedia.org/wiki/Finite-state_machine) (FSM) implementation of Dario's life cycle.
+<p align="center">
+  <img src="web/src/assets/dario-regular-new.png" width="180" alt="Dario character">
+</p>
+
+**A playable zero-knowledge endless runner built on Dusk.** Play a complete run in the browser, generate a Groth16 proof locally, and submit a score that the smart contract accepts only after verifying the gameplay proof.
+
+<p align="center">
+  <strong><a href="https://hdauven.github.io/dario/">Play Dario Dash in your browser</a></strong>
+</p>
+
+You can play without a wallet. Proving and submitting a ranked run uses Dusk Testnet and Dusk Wallet.
+
+## Why this is interesting
+
+- **The proof covers the game, not just a claimed score.** The circuit constrains movement, collisions, obstacle clearance, power-ups, damage, kills, form transitions, and scoring.
+- **Proof generation runs in the browser.** A Web Worker uses `snarkjs` and a pinned proving key, keeping the input trace client-side.
+- **The simulation is deterministic across boundaries.** Rust libraries provide the shared, integer-only game logic used by WASM, native proving, tests, and the contract.
+- **The score is enforced on-chain.** The contract binds the transaction sender into the public inputs, reconstructs the seeded obstacle schedule, verifies the proof, and rejects seed replays.
+- **Two proving paths are supported.** Fast browser-native Circom/Groth16 proofs and an alternative RISC Zero execution-proof path both verify through Dusk's BN254 host function.
+
+## Proof flow
+
+1. Play Dario Dash locally in the browser.
+2. The game records the inputs and witness data needed to prove the run.
+3. The browser generates a Groth16 proof without sending the trace to a server.
+4. The contract recomputes the public inputs and verifies the proof.
+5. Only a valid, non-replayed run reaches the on-chain leaderboard.
 
 ## Structure 
 
