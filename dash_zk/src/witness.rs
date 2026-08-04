@@ -37,6 +37,13 @@ pub struct ObsWitness {
     pub event_tick: u32,
 }
 
+#[derive(Clone, Copy, Default, Debug)]
+pub struct ItemWitness {
+    /// Exact horizontal player-overlap window, or T_NONE for padding.
+    pub w1: u32,
+    pub w2: u32,
+}
+
 /// Merged form-event timeline entry.
 /// kind: 0 espresso, 1 chili, 2 cape, 3 damage, 4 invuln-touch (no-op).
 #[derive(Clone, Copy, Default, Debug)]
@@ -57,6 +64,7 @@ pub struct RunWitness {
     pub ticks: u32,
     pub ground: [ObsWitness; MAX_GROUND],
     pub bats: [ObsWitness; MAX_BATS],
+    pub items: [ItemWitness; MAX_SCHED_ITEMS],
     pub form_events: [FormEv; MAX_FORM_EVENTS],
     pub form_event_count: usize,
     pub jumps: [JumpEv; MAX_JUMPS],
@@ -71,15 +79,16 @@ pub struct RunWitness {
 /// player, and the last such tick. Returns None if the window starts after
 /// `t_max`.
 fn overlap_window(
+    x0_100: i64,
     spawn: u32,
     left_off100: i64,
     right_off100: i64,
     t_max: u32,
 ) -> Option<(u32, u32)> {
-    // x(t) = OBS_X0_100 - (d100(t) - d100(spawn-1)); strictly decreasing.
+    // x(t) = x0_100 - (d100(t) - d100(spawn-1)); strictly decreasing.
     // w1: first t with x + left_off < PLAYER_RIGHT100
     // w2: last  t with x + right_off > PLAYER_LEFT100
-    let x_at = |t: u32| world_x100(OBS_X0_100, spawn, t);
+    let x_at = |t: u32| world_x100(x0_100, spawn, t);
     let mut w1 = None;
     let mut t = spawn;
     while t <= t_max {
@@ -116,7 +125,13 @@ impl RunWitness {
                 ObsStatus::Killed(_) => T_NONE - 1,
                 _ => t_end,
             };
-            let win = overlap_window(g.spawn_tick, 4 * FP100, (g.w as i64 - 4) * FP100, horizon);
+            let win = overlap_window(
+                OBS_X0_100,
+                g.spawn_tick,
+                4 * FP100,
+                (g.w as i64 - 4) * FP100,
+                horizon,
+            );
             *ow = obs_witness(win, sim.ground_status()[i], t_end);
         }
         for ow in ground.iter_mut().skip(sched.ground_count) {
@@ -136,7 +151,7 @@ impl RunWitness {
                 ObsStatus::Killed(_) => T_NONE - 1,
                 _ => t_end,
             };
-            let win = overlap_window(b.spawn_tick, 0, (BAT_W as i64) * FP100, horizon);
+            let win = overlap_window(OBS_X0_100, b.spawn_tick, 0, (BAT_W as i64) * FP100, horizon);
             *ow = obs_witness(win, sim.bat_status()[i], t_end);
         }
         for ow in bats.iter_mut().skip(sched.bat_count) {
@@ -147,6 +162,24 @@ impl RunWitness {
             ow.b = 0;
             ow.event_tick = T_NONE;
             ow.jump_idx = u32::MAX;
+        }
+
+        let mut items = [ItemWitness::default(); MAX_SCHED_ITEMS];
+        for (i, iw) in items.iter_mut().enumerate().take(sched.item_count) {
+            let item = sched.items[i];
+            let (w1, w2) = overlap_window(
+                ITEM_X0_100,
+                item.spawn_tick,
+                0,
+                ITEM_SIZE as i64 * FP100,
+                T_NONE - 1,
+            )
+            .expect("scheduled item must cross the player before the witness horizon");
+            *iw = ItemWitness { w1, w2 };
+        }
+        for iw in items.iter_mut().skip(sched.item_count) {
+            iw.w1 = T_NONE;
+            iw.w2 = T_NONE;
         }
 
         // Covering jump for ground obstacles that need clearance: the jump
@@ -220,6 +253,7 @@ impl RunWitness {
             ticks: t_end,
             ground,
             bats,
+            items,
             form_events,
             form_event_count: n,
             jumps: sim.jumps,
@@ -345,6 +379,23 @@ mod tests {
             }
             assert!(right(ow.w2) > PLAYER_LEFT100);
             assert!(right(ow.w2 + 1) <= PLAYER_LEFT100);
+        }
+    }
+
+    #[test]
+    fn item_windows_bracket_actual_overlap() {
+        let sim = autopilot_run(42);
+        let sched = sim.schedule();
+        let w = RunWitness::extract(&sim);
+        for i in 0..sched.item_count {
+            let item = sched.items[i];
+            let iw = w.items[i];
+            let x = |t: u32| world_x100(ITEM_X0_100, item.spawn_tick, t);
+            assert!(x(iw.w1) < PLAYER_RIGHT100);
+            assert!(x(iw.w1 - 1) >= PLAYER_RIGHT100);
+            assert!(x(iw.w2) + i64::from(ITEM_SIZE) * FP100 > PLAYER_LEFT100);
+            assert!(x(iw.w2 + 1) + i64::from(ITEM_SIZE) * FP100 <= PLAYER_LEFT100);
+            assert!(iw.w2 <= iw.w1 + 7);
         }
     }
 

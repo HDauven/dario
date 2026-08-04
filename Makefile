@@ -4,8 +4,8 @@ ZK_BROWSER_ARTIFACT_TAG := zk-browser-v1
 ZK_BROWSER_ARTIFACT_URL := https://github.com/HDauven/dario/releases/download/$(ZK_BROWSER_ARTIFACT_TAG)
 ZK_BROWSER_WASM_SHA256 := fb3908202b44ae3062f95e4261c30d69d8d514d586731b1f33cf9a95ab46fe48
 ZK_BROWSER_ZKEY_SHA256 := dd5d6f37db89880d461e2ddc9c99cadb48b46bd6e10e91bb83c5529d4819c5fa
-ZK_BROWSER_PTAU := zk_browser/ptau/powersOfTau28_hez_final_19.ptau
-ZK_BROWSER_PTAU_SHA256 := 3f428d1a407e4704ef906960e000b03089e5e6ec29bf65b07bb5e3de005f4700
+ZK_BROWSER_PTAU := zk_browser/ptau/powersOfTau28_hez_final_21.ptau
+ZK_BROWSER_PTAU_SHA256 := cdc7c94a6635bc91466d8c7d96faefe1d17ecc98a3596a748ca1e6c895f8c2b4
 
 contract: ## Build contract
 	@RUSTFLAGS="-C link-args=-zstack-size=65536" \
@@ -103,6 +103,13 @@ zk-browser-setup: zk-browser-ptau ## Compile the circuit and create fresh Groth1
 	  ../zk_browser/build/dash/vkey.json ../contract/assets dash_zk
 	@echo "Circuit + keys ready. Run 'make zk-assets' and rebuild the contract."
 
+zk-browser-test: ## Compile the circuit and run honest/malformed witness regressions (needs circom)
+	@cd zk_browser && npm ci
+	@mkdir -p zk_browser/build/test
+	@cd zk_browser && circom circuits/dash_zk.circom --wasm -o build/test -l node_modules
+	@node zk_browser/js/soundness-regressions.mjs \
+	  zk_browser/build/test/dash_zk_js/dash_zk.wasm
+
 dash-web: ## Build the deterministic sim to wasm for the web app
 	@wasm-pack build dash_web \
 	  --target web \
@@ -143,4 +150,4 @@ test: contract moonlight-router ## Run all tests
 	  --manifest-path=dash_zk/Cargo.toml \
 	  --color=always
 
-.PHONY: contract moonlight-router data-driver web-assets zk-assets zk-browser-artifacts zk-browser-ptau zk-browser-setup dash-web web web-build zk zk-constants prove test
+.PHONY: contract moonlight-router data-driver web-assets zk-assets zk-browser-artifacts zk-browser-ptau zk-browser-setup zk-browser-test dash-web web web-build zk zk-constants prove test

@@ -39,6 +39,17 @@ template SLtX() {
     out <== lt.out;
 }
 
+// Signed a <= b for x-domain values.
+template SLeqX() {
+    signal input a;
+    signal input b;
+    signal output out;
+    component lt = SLtX();
+    lt.a <== b;
+    lt.b <== a;
+    out <== 1 - lt.out;
+}
+
 // Signed a < b for y-domain (fp) values, |v| < 2^23.
 template SLtY() {
     signal input a;
@@ -318,6 +329,349 @@ template PlayerY2() {
     y <== 118784 + yd1 + yd2;
 }
 
+// Prove first-collision semantics for one obstacle class.  Obstacles are
+// spawn-ordered, so a fireball can only encounter a contiguous suffix window.
+// Six slots cover at most five candidates plus the first out-of-window
+// entry; the circuit proves both boundaries rather than trusting the bound.
+template FirstCollisionClass(M, NS, CLS) {
+    signal input fire;
+    signal input hit;
+    signal input need;
+    signal input fireY;
+    signal input targetClass;
+    signal input targetIdx;
+    signal input opack[M + 1];
+    signal input statpack[M + 1];
+    signal input sel[NS][M + 1];
+    signal input first[NS];
+    signal input tq[2 * NS];
+    signal input tr[2 * NS];
+
+    signal selSum[NS];
+    signal idx[NS];
+    component odot[NS];
+    component sdot[NS];
+    component oub[NS];
+    component sub[NS];
+    signal spawn[NS];
+    signal f1[NS];
+    signal f2[NS];
+    signal cact[NS];
+    signal evt[NS];
+    signal terminal[NS];
+    signal aliveOrUnreached[NS];
+    component withinEnd[NS];
+    signal cand[NS];
+
+    for (var s = 0; s < NS; s++) {
+        var ss = 0;
+        var si = 0;
+        for (var i = 0; i <= M; i++) {
+            sel[s][i] * (sel[s][i] - 1) === 0;
+            ss += sel[s][i];
+            si += i * sel[s][i];
+        }
+        selSum[s] <== ss;
+        idx[s] <== si;
+        if (s == 0) {
+            selSum[s] === need;
+        } else {
+            selSum[s] === cand[s - 1];
+            cand[s - 1] * (idx[s] - idx[s - 1] - 1) === 0;
+        }
+
+        odot[s] = EscalarProduct(M + 1);
+        sdot[s] = EscalarProduct(M + 1);
+        for (var i = 0; i <= M; i++) {
+            odot[s].in1[i] <== sel[s][i];
+            odot[s].in2[i] <== opack[i];
+            sdot[s].in1[i] <== sel[s][i];
+            sdot[s].in2[i] <== statpack[i];
+        }
+        oub[s] = Num2Bits(30);
+        oub[s].in <== odot[s].out;
+        var v = 0;
+        for (var b = 0; b < 12; b++) { v += oub[s].out[b] * (1 << b); }
+        spawn[s] <== v;
+        v = 0;
+        for (var b = 12; b < 19; b++) { v += oub[s].out[b] * (1 << (b - 12)); }
+        f1[s] <== v;
+        v = 0;
+        for (var b = 19; b < 28; b++) { v += oub[s].out[b] * (1 << (b - 19)); }
+        f2[s] <== v;
+        cact[s] <== oub[s].out[29];
+        cact[s] * (oub[s].out[28] - CLS) === 0;
+
+        sub[s] = Num2Bits(15);
+        sub[s].in <== sdot[s].out;
+        v = 0;
+        for (var b = 0; b < 12; b++) { v += sub[s].out[b] * (1 << b); }
+        evt[s] <== v;
+        terminal[s] <== sub[s].out[12] + sub[s].out[13] + sub[s].out[14];
+        aliveOrUnreached[s] <== cact[s] - terminal[s];
+
+        withinEnd[s] = LessEqThan(13);
+        withinEnd[s].in[0] <== spawn[s];
+        withinEnd[s].in[1] <== fire + 38;
+        cand[s] <== cact[s] * withinEnd[s].out;
+    }
+    // The last selected slot is the boundary immediately after all possible
+    // candidates.  If this fails, NS must be increased rather than truncating.
+    cand[NS - 1] === 0;
+
+    // Slot zero is the first active obstacle that has not already passed the
+    // fireball at the relevant start boundary.
+    component startSpawnCap = LessEqThan(13);
+    startSpawnCap.in[0] <== spawn[0];
+    startSpawnCap.in[1] <== fire + 38;
+    signal startCappedSpawn <== startSpawnCap.out * (spawn[0] - fire - 38) + fire + 38;
+    component startSpawnLeFire = LessEqThan(13);
+    startSpawnLeFire.in[0] <== startCappedSpawn;
+    startSpawnLeFire.in[1] <== fire;
+    signal startAnchor <== startSpawnLeFire.out * (fire - startCappedSpawn) + startCappedSpawn;
+    component startD = D100();
+    startD.t <== startAnchor;
+    component startDs = D100();
+    startDs.t <== spawn[0] - cact[0];
+    component startA = SLtX();
+    startA.a <== 4505600 + 529000 * (startAnchor + 1 - fire);
+    if (CLS == 0) {
+        startA.b <== 25600000 + startDs.out - startD.out + 25600 * f1[0] - 102400;
+    } else {
+        startA.b <== 25600000 + startDs.out - startD.out + 1024000;
+    }
+    cact[0] * (1 - startA.out) === 0;
+
+    component prevDot = EscalarProduct(M + 1);
+    for (var i = 0; i <= M; i++) {
+        prevDot.in1[i] <== sel[0][i];
+        if (i == 0) {
+            prevDot.in2[i] <== 0;
+        } else {
+            prevDot.in2[i] <== opack[i - 1];
+        }
+    }
+    component prevUb = Num2Bits(30);
+    prevUb.in <== prevDot.out;
+    var pv = 0;
+    for (var b = 0; b < 12; b++) { pv += prevUb.out[b] * (1 << b); }
+    signal prevSpawn <== pv;
+    pv = 0;
+    for (var b = 12; b < 19; b++) { pv += prevUb.out[b] * (1 << (b - 12)); }
+    signal prevF1 <== pv;
+    signal prevAct <== prevUb.out[29];
+    component startIdxZero = IsZero();
+    startIdxZero.in <== idx[0];
+    signal startInactive <== selSum[0] - cact[0];
+    signal sentinelValid <== startIdxZero.out + prevAct;
+    startInactive * (1 - sentinelValid) === 0;
+    component prevSpawnCap = LessEqThan(13);
+    prevSpawnCap.in[0] <== prevSpawn;
+    prevSpawnCap.in[1] <== fire + 38;
+    signal prevCappedSpawn <== prevSpawnCap.out * (prevSpawn - fire - 38) + fire + 38;
+    component prevSpawnLeFire = LessEqThan(13);
+    prevSpawnLeFire.in[0] <== prevCappedSpawn;
+    prevSpawnLeFire.in[1] <== fire;
+    signal prevAnchor <== prevSpawnLeFire.out * (fire - prevCappedSpawn) + prevCappedSpawn;
+    component prevD = D100();
+    prevD.t <== prevAnchor;
+    component prevDs = D100();
+    prevDs.t <== prevSpawn - prevAct;
+    component prevA = SLtX();
+    prevA.a <== 4505600 + 529000 * (prevAnchor + 1 - fire);
+    if (CLS == 0) {
+        prevA.b <== 25600000 + prevDs.out - prevD.out + 25600 * prevF1 - 102400;
+    } else {
+        prevA.b <== 25600000 + prevDs.out - prevD.out + 1024000;
+    }
+    prevAct * prevA.out === 0;
+
+    component fb[NS];
+    component baseOrder[NS];
+    signal base[NS];
+    component baseLeFirst[NS];
+    component firstLeEnd[NS];
+    component dspawn[NS];
+    component dfirst[NS];
+    component isBase[NS];
+    component dprev[NS];
+    component enterFirst[NS];
+    component enterPrev[NS];
+    signal prevGate[NS];
+    component aFirst[NS];
+    signal pair[NS];
+    component dt[NS][3];
+    component exitWindow[NS];
+    component ax[NS][2];
+    component bx[NS][2];
+    signal h1[NS][2];
+    signal horiz[NS][2];
+    signal phase[NS][2];
+    component tri[NS][2];
+    signal top[NS][2];
+    signal bot[NS][2];
+    component y1[NS][2];
+    component y2[NS][2];
+    signal yy[NS][2];
+    signal yOverlap[NS][2];
+    component before[NS][2];
+    component same[NS][2];
+    component localEarlier[NS][2];
+    signal earlier[NS][2];
+    signal sameEarlier[NS][2];
+    signal relevant[NS][2];
+    component evtGe[NS][2];
+    signal liveTerm[NS][2];
+    signal live[NS][2];
+    signal no1[NS][2];
+    signal no2[NS][2];
+
+    for (var s = 0; s < NS; s++) {
+        fb[s] = Num2Bits(12);
+        fb[s].in <== first[s];
+        (1 - cand[s]) * (first[s] - 4000) === 0;
+        baseOrder[s] = LessEqThan(12);
+        baseOrder[s].in[0] <== spawn[s];
+        baseOrder[s].in[1] <== fire;
+        base[s] <== baseOrder[s].out * (fire - spawn[s]) + spawn[s];
+        baseLeFirst[s] = LessEqThan(13);
+        baseLeFirst[s].in[0] <== base[s];
+        baseLeFirst[s].in[1] <== first[s];
+        cand[s] * (1 - baseLeFirst[s].out) === 0;
+        firstLeEnd[s] = LessEqThan(13);
+        firstLeEnd[s].in[0] <== first[s];
+        firstLeEnd[s].in[1] <== fire + 38;
+        cand[s] * (1 - firstLeEnd[s].out) === 0;
+
+        dspawn[s] = D100();
+        dspawn[s].t <== spawn[s] - cact[s];
+        dfirst[s] = D100();
+        dfirst[s].t <== first[s];
+        isBase[s] = IsEqual();
+        isBase[s].in[0] <== first[s];
+        isBase[s].in[1] <== base[s];
+        dprev[s] = D100();
+        dprev[s].t <== first[s] - 1 + isBase[s].out;
+        enterFirst[s] = SLtX();
+        if (CLS == 0) {
+            enterFirst[s].a <== 25600000 + dspawn[s].out - dfirst[s].out + 102400;
+        } else {
+            enterFirst[s].a <== 25600000 + dspawn[s].out - dfirst[s].out;
+        }
+        enterFirst[s].b <== 4505600 + 529000 * (first[s] + 1 - fire) + 460800;
+        cand[s] * (1 - enterFirst[s].out) === 0;
+
+        enterPrev[s] = SLtX();
+        if (CLS == 0) {
+            enterPrev[s].a <== 25600000 + dspawn[s].out - dprev[s].out + 102400;
+        } else {
+            enterPrev[s].a <== 25600000 + dspawn[s].out - dprev[s].out;
+        }
+        enterPrev[s].b <== 4505600 + 529000 * (first[s] - fire + isBase[s].out) + 460800;
+        prevGate[s] <== cand[s] * (1 - isBase[s].out);
+        prevGate[s] * enterPrev[s].out === 0;
+
+        aFirst[s] = SLtX();
+        aFirst[s].a <== 4505600 + 529000 * (first[s] + 1 - fire);
+        if (CLS == 0) {
+            aFirst[s].b <== 25600000 + dspawn[s].out - dfirst[s].out + 25600 * f1[s] - 102400;
+        } else {
+            aFirst[s].b <== 25600000 + dspawn[s].out - dfirst[s].out + 1024000;
+        }
+        pair[s] <== cand[s] * aFirst[s].out;
+
+        for (var d = 1; d < 3; d++) {
+            dt[s][d] = D100();
+            dt[s][d].t <== first[s] + d;
+        }
+        exitWindow[s] = SLeqX();
+        if (CLS == 0) {
+            exitWindow[s].a <== 25600000 + dspawn[s].out - dt[s][2].out + 25600 * f1[s] - 102400;
+        } else {
+            exitWindow[s].a <== 25600000 + dspawn[s].out - dt[s][2].out + 1024000;
+        }
+        exitWindow[s].b <== 4505600 + 529000 * (first[s] + 3 - fire);
+        pair[s] * (1 - exitWindow[s].out) === 0;
+
+        for (var d = 0; d < 2; d++) {
+            if (d == 0) {
+                h1[s][d] <== cand[s] * aFirst[s].out;
+                horiz[s][d] <== h1[s][d] * enterFirst[s].out;
+            } else {
+                ax[s][d] = SLtX();
+                ax[s][d].a <== 4505600 + 529000 * (first[s] + d + 1 - fire);
+                if (CLS == 0) {
+                    ax[s][d].b <== 25600000 + dspawn[s].out - dt[s][d].out + 25600 * f1[s] - 102400;
+                } else {
+                    ax[s][d].b <== 25600000 + dspawn[s].out - dt[s][d].out + 1024000;
+                }
+                bx[s][d] = SLtX();
+                if (CLS == 0) {
+                    bx[s][d].a <== 25600000 + dspawn[s].out - dt[s][d].out + 102400;
+                } else {
+                    bx[s][d].a <== 25600000 + dspawn[s].out - dt[s][d].out;
+                }
+                bx[s][d].b <== 4505600 + 529000 * (first[s] + d + 1 - fire) + 460800;
+                h1[s][d] <== cand[s] * ax[s][d].out;
+                horiz[s][d] <== h1[s][d] * bx[s][d].out;
+            }
+
+            if (CLS == 0) {
+                phase[s][d] <== 0;
+                tq[2 * s + d] === 0;
+                tr[2 * s + d] === 0;
+            } else {
+                phase[s][d] <== horiz[s][d] * (f1[s] + first[s] + d - spawn[s]);
+                tri[s][d] = TriOff();
+                tri[s][d].p <== phase[s][d];
+                tri[s][d].q <== tq[2 * s + d];
+                tri[s][d].r <== tr[2 * s + d];
+            }
+            if (CLS == 0) {
+                top[s][d] <== 119808 - 256 * f2[s];
+                bot[s][d] <== 118784;
+            } else {
+                top[s][d] <== 256 * f2[s] + tri[s][d].off;
+                bot[s][d] <== 256 * f2[s] + tri[s][d].off + 8192;
+            }
+            y1[s][d] = SLtY();
+            y1[s][d].a <== fireY;
+            y1[s][d].b <== bot[s][d];
+            y2[s][d] = SLtY();
+            y2[s][d].a <== top[s][d];
+            y2[s][d].b <== fireY + 4608;
+            yy[s][d] <== y1[s][d].out * y2[s][d].out;
+            yOverlap[s][d] <== horiz[s][d] * yy[s][d];
+
+            before[s][d] = LessThan(12);
+            before[s][d].in[0] <== first[s] + d;
+            before[s][d].in[1] <== hit;
+            same[s][d] = IsEqual();
+            same[s][d].in[0] <== first[s] + d;
+            same[s][d].in[1] <== hit;
+            localEarlier[s][d] = LessThan(8);
+            localEarlier[s][d].in[0] <== idx[s];
+            localEarlier[s][d].in[1] <== targetIdx;
+            if (CLS == 0) {
+                earlier[s][d] <== targetClass + (1 - targetClass) * localEarlier[s][d].out;
+            } else {
+                earlier[s][d] <== targetClass * localEarlier[s][d].out;
+            }
+            sameEarlier[s][d] <== same[s][d].out * earlier[s][d];
+            relevant[s][d] <== before[s][d].out + sameEarlier[s][d];
+
+            evtGe[s][d] = LessEqThan(13);
+            evtGe[s][d].in[0] <== first[s] + d;
+            evtGe[s][d].in[1] <== evt[s];
+            liveTerm[s][d] <== terminal[s] * evtGe[s][d].out;
+            live[s][d] <== cand[s] * (aliveOrUnreached[s] + liveTerm[s][d]);
+            no1[s][d] <== yOverlap[s][d] * live[s][d];
+            no2[s][d] <== no1[s][d] * relevant[s][d];
+            no2[s][d] === 0;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
@@ -360,6 +714,17 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     signal input kjsel[NK][NJ + 1];
     signal input ktq[NK];
     signal input ktr[NK];
+    signal input kgsel[NK][6 * (NG + 1)];
+    signal input kbsel[NK][6 * (NB + 1)];
+    signal input kgfirst[NK][6];
+    signal input kbfirst[NK][6];
+    signal input kgq[NK][12];
+    signal input kgr[NK][12];
+    signal input kbq[NK][12];
+    signal input kbr[NK][12];
+    signal input iw1[NI];
+    signal input iw2[NI];
+    signal input ijsel[NI][NJ + 1];
     signal input gw1[NG];
     signal input gw2[NG];
     signal input gs[NG][5]; // status onehot: alive, killed, damaged, touched, unreached
@@ -374,6 +739,8 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     signal input btr[NB][8];
     signal input scoreQ;
     signal input scoreR;
+    signal input preScoreQ;
+    signal input preScoreR;
 
     var NO = NG + NB;
 
@@ -643,7 +1010,154 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         ipackAll[i] <== ispawn[i] + 4096 * ikind[i] + 16384 * iy[i] + 8388608 * iactv[i];
     }
 
-    // ================= section 4: timeline entry checks =================
+    // ================= section 4: mandatory item pickups =================
+    //
+    // The Rust simulator auto-collects an item on the first tick where both
+    // hitboxes overlap. Bind each item to its exact horizontal window, scan
+    // that (at most eight-tick) window, and require one pickup event exactly
+    // at the first vertical overlap.
+    component iw1b[NI];
+    component iw2b[NI];
+    component idsm[NI];
+    component idw1[NI];
+    component idw1m[NI];
+    component idw2[NI];
+    component idw2p[NI];
+    component icA[NI];
+    component icB[NI];
+    component icC[NI];
+    component icD[NI];
+    component iwlen[NI];
+    component iwReach[NI];
+    signal ireach[NI];
+    component ilj[NI];
+    component itauEnd[NI][8];
+    component itauTicks[NI][8];
+    signal ig1[NI][8];
+    signal ig[NI][8];
+    component ipy[NI][8];
+    component iyt[NI][8];
+    component iyb[NI][8];
+    signal iov1[NI][8];
+    signal iov[NI][8];
+    signal iseen[NI][9];
+    signal ifirst[NI][8];
+    signal iPickCount[NI];
+    signal iPickTick[NI];
+    component ipickdot[NI];
+    component ifdot[NI];
+
+    for (var i = 0; i < NI; i++) {
+        iw1b[i] = Num2Bits(12);
+        iw1b[i].in <== iw1[i];
+        iw2b[i] = Num2Bits(12);
+        iw2b[i].in <== iw2[i];
+        (1 - iactv[i]) * (iw1[i] - 4000) === 0;
+        (1 - iactv[i]) * (iw2[i] - 4000) === 0;
+
+        idsm[i] = D100();
+        idsm[i].t <== ispawn[i] - iactv[i];
+        idw1[i] = D100();
+        idw1[i].t <== iw1[i];
+        idw1m[i] = D100();
+        idw1m[i].t <== iw1[i] - 1 + (1 - iactv[i]);
+        idw2[i] = D100();
+        idw2[i].t <== iw2[i];
+        idw2p[i] = D100();
+        idw2p[i].t <== iw2[i] + iactv[i];
+
+        // Exact horizontal overlap window.
+        icA[i] = SLtX();
+        icA[i].a <== 25344000 + idsm[i].out - idw1[i].out;
+        icA[i].b <== 4300800;
+        iactv[i] * (1 - icA[i].out) === 0;
+        icB[i] = SLtX();
+        icB[i].a <== 25344000 + idsm[i].out - idw1m[i].out;
+        icB[i].b <== 4300800;
+        iactv[i] * icB[i].out === 0;
+        icC[i] = SLtX();
+        icC[i].a <== 3532800;
+        icC[i].b <== 25344000 + idsm[i].out - idw2[i].out + 870400;
+        iactv[i] * (1 - icC[i].out) === 0;
+        icD[i] = SLtX();
+        icD[i].a <== 3532800;
+        icD[i].b <== 25344000 + idsm[i].out - idw2p[i].out + 870400;
+        iactv[i] * icD[i].out === 0;
+
+        iwlen[i] = LessEqThan(13);
+        iwlen[i].in[0] <== iw2[i];
+        iwlen[i].in[1] <== iw1[i] + 7;
+        iactv[i] * (1 - iwlen[i].out) === 0;
+
+        iwReach[i] = LessEqThan(12);
+        iwReach[i].in[0] <== iw1[i];
+        iwReach[i].in[1] <== ticks;
+        ireach[i] <== iactv[i] * iwReach[i].out;
+
+        ilj[i] = LastJumpAt(NJ, 1);
+        ilj[i].t <== iw1[i];
+        ilj[i].need <== ireach[i];
+        for (var k = 0; k <= NJ; k++) {
+            ilj[i].sel[k] <== ijsel[i][k];
+            ilj[i].packV[k] <== jpackV[k];
+            ilj[i].nextV[k] <== jnextPackV[k];
+        }
+
+        iseen[i][0] <== 0;
+        var pc = 0;
+        for (var e = 0; e < NE; e++) {
+            pc += eisel[e][i];
+        }
+        iPickCount[i] <== pc;
+        ipickdot[i] = EscalarProduct(NE);
+        for (var e = 0; e < NE; e++) {
+            ipickdot[i].in1[e] <== eisel[e][i];
+            ipickdot[i].in2[e] <== etick[e];
+        }
+        iPickTick[i] <== ipickdot[i].out;
+        ifdot[i] = EscalarProduct(8);
+
+        for (var d = 0; d < 8; d++) {
+            itauEnd[i][d] = LessEqThan(13);
+            itauEnd[i][d].in[0] <== iw1[i] + d;
+            itauEnd[i][d].in[1] <== iw2[i];
+            itauTicks[i][d] = LessEqThan(13);
+            itauTicks[i][d].in[0] <== iw1[i] + d;
+            itauTicks[i][d].in[1] <== ticks;
+            ig1[i][d] <== iactv[i] * itauEnd[i][d].out;
+            ig[i][d] <== ig1[i][d] * itauTicks[i][d].out;
+
+            ipy[i][d] = PlayerY2();
+            ipy[i][d].t <== iw1[i] + d;
+            ipy[i][d].need <== ig[i][d];
+            ipy[i][d].jt1 <== ilj[i].jt;
+            ipy[i][d].land1 <== ilj[i].land;
+            ipy[i][d].isSup1 <== ilj[i].isSup;
+            ipy[i][d].isCap1 <== ilj[i].isCap;
+            ipy[i][d].jt2 <== ilj[i].jt2;
+            ipy[i][d].land2 <== ilj[i].land2;
+            ipy[i][d].isSup2 <== ilj[i].isSup2;
+            ipy[i][d].isCap2 <== ilj[i].isCap2;
+
+            iyt[i][d] = SLtY();
+            iyt[i][d].a <== ipy[i][d].y - 17408;
+            iyt[i][d].b <== 256 * iy[i] + 8704;
+            iyb[i][d] = SLtY();
+            iyb[i][d].a <== 256 * iy[i];
+            iyb[i][d].b <== ipy[i][d].y - 1024;
+            iov1[i][d] <== ig[i][d] * iyt[i][d].out;
+            iov[i][d] <== iov1[i][d] * iyb[i][d].out;
+            ifirst[i][d] <== iov[i][d] * (1 - iseen[i][d]);
+            iseen[i][d + 1] <== iseen[i][d] + ifirst[i][d];
+            ifdot[i].in1[d] <== ifirst[i][d];
+            ifdot[i].in2[d] <== iw1[i] + d;
+        }
+
+        iPickCount[i] === iseen[i][8];
+        iPickTick[i] === ifdot[i].out;
+    }
+
+    // ================= section 5: timeline entry checks =================
     component dte[NE];
     component elj[NE];
     component epy[NE];
@@ -833,7 +1347,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         isDT[e] * (1 - eyg[e].out - eOvd[e]) === 0;
     }
 
-    // ================= section 5: kills =================
+    // ================= section 6: kills =================
     component kfb[NK];
     component khb[NK];
     component kcool[NK];
@@ -865,6 +1379,8 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     signal kBotD[NK];
     component ky1[NK];
     component ky2[NK];
+    signal kTargetGroundIdx[NK];
+    signal kTargetBatIdx[NK];
 
     for (var k = 0; k < NK; k++) {
         kact[k] * (kact[k] - 1) === 0;
@@ -931,11 +1447,20 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
 
         // target obstacle: must be marked killed at exactly this hit tick.
         var osv = 0;
+        var targetGroundIdx = 0;
+        var targetBatIdx = 0;
         for (var i = 0; i < NO; i++) {
             kosel[k][i] * (kosel[k][i] - 1) === 0;
             osv += kosel[k][i];
+            if (i < NG) {
+                targetGroundIdx += i * kosel[k][i];
+            } else {
+                targetBatIdx += (i - NG) * kosel[k][i];
+            }
         }
         kact[k] === osv;
+        kTargetGroundIdx[k] <== targetGroundIdx;
+        kTargetBatIdx[k] <== targetBatIdx;
 
         kodot[k] = EscalarProduct(NO);
         ksdot[k] = EscalarProduct(NO);
@@ -1011,7 +1536,66 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         kact[k] * (1 - ky2[k].out) === 0;
     }
 
-    // ================= section 6: ground obstacles =================
+    // ================= section 7: fireball first collision =================
+    component kGroundFirst[NK];
+    component kBatFirst[NK];
+    for (var k = 0; k < NK; k++) {
+        kGroundFirst[k] = FirstCollisionClass(NG, 6, 0);
+        kGroundFirst[k].fire <== kfire[k];
+        kGroundFirst[k].hit <== khit[k];
+        kGroundFirst[k].need <== kact[k];
+        kGroundFirst[k].fireY <== kpy[k].y - 10240;
+        kGroundFirst[k].targetClass <== kOcls[k];
+        kGroundFirst[k].targetIdx <== kTargetGroundIdx[k];
+        for (var i = 0; i <= NG; i++) {
+            if (i < NG) {
+                kGroundFirst[k].opack[i] <== opackAll[i];
+                kGroundFirst[k].statpack[i] <== statPackAll[i];
+            } else {
+                kGroundFirst[k].opack[i] <== 0;
+                kGroundFirst[k].statpack[i] <== 0;
+            }
+        }
+        for (var s = 0; s < 6; s++) {
+            for (var i = 0; i <= NG; i++) {
+                kGroundFirst[k].sel[s][i] <== kgsel[k][s * (NG + 1) + i];
+            }
+            kGroundFirst[k].first[s] <== kgfirst[k][s];
+            kGroundFirst[k].tq[2 * s] <== kgq[k][2 * s];
+            kGroundFirst[k].tq[2 * s + 1] <== kgq[k][2 * s + 1];
+            kGroundFirst[k].tr[2 * s] <== kgr[k][2 * s];
+            kGroundFirst[k].tr[2 * s + 1] <== kgr[k][2 * s + 1];
+        }
+
+        kBatFirst[k] = FirstCollisionClass(NB, 6, 1);
+        kBatFirst[k].fire <== kfire[k];
+        kBatFirst[k].hit <== khit[k];
+        kBatFirst[k].need <== kact[k];
+        kBatFirst[k].fireY <== kpy[k].y - 10240;
+        kBatFirst[k].targetClass <== kOcls[k];
+        kBatFirst[k].targetIdx <== kTargetBatIdx[k];
+        for (var j = 0; j <= NB; j++) {
+            if (j < NB) {
+                kBatFirst[k].opack[j] <== opackAll[NG + j];
+                kBatFirst[k].statpack[j] <== statPackAll[NG + j];
+            } else {
+                kBatFirst[k].opack[j] <== 0;
+                kBatFirst[k].statpack[j] <== 0;
+            }
+        }
+        for (var s = 0; s < 6; s++) {
+            for (var j = 0; j <= NB; j++) {
+                kBatFirst[k].sel[s][j] <== kbsel[k][s * (NB + 1) + j];
+            }
+            kBatFirst[k].first[s] <== kbfirst[k][s];
+            kBatFirst[k].tq[2 * s] <== kbq[k][2 * s];
+            kBatFirst[k].tq[2 * s + 1] <== kbq[k][2 * s + 1];
+            kBatFirst[k].tr[2 * s] <== kbr[k][2 * s];
+            kBatFirst[k].tr[2 * s + 1] <== kbr[k][2 * s + 1];
+        }
+    }
+
+    // ================= section 8: ground obstacles =================
     component gw1b[NG];
     component gw2b[NG];
     component gdsm[NG];
@@ -1181,7 +1765,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         gnc[i] * (1 - gclB[i].out) === 0;
     }
 
-    // ================= section 7: bats =================
+    // ================= section 9: bats =================
     component bw1b[NB];
     component bw2b[NB];
     component bdsm[NB];
@@ -1327,7 +1911,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         }
     }
 
-    // ================= section 8: counts & score =================
+    // ================= section 10: counts & score =================
     var sumS1 = 0;
     var sumS2 = 0;
     var sumS3 = 0;
@@ -1380,6 +1964,51 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     component scoreCapped = IsEqual();
     scoreCapped.in[0] <== score;
     scoreCapped.in[1] <== 1500;
+
+    // A score-capped run ends on the first tick that reaches the cap.  The
+    // previous tick's raw score must therefore still be below 1500.
+    component ticksZero = IsZero();
+    ticksZero.in <== ticks;
+    signal preTick <== ticks - 1 + ticksZero.out;
+    component dPre = D100();
+    dPre.t <== preTick;
+    component preQb = Num2Bits(12);
+    preQb.in <== preScoreQ;
+    component preRb = Num2Bits(21);
+    preRb.in <== preScoreR;
+    component preRlt = LessThan(21);
+    preRlt.in[0] <== preScoreR;
+    preRlt.in[1] <== 1280000;
+    preRlt.out === 1;
+    dPre.out === 1280000 * preScoreQ + preScoreR;
+
+    component pickBefore[NE];
+    signal prePickFlag[NE];
+    var prePick = 0;
+    for (var e = 0; e < NE; e++) {
+        pickBefore[e] = LessThan(12);
+        pickBefore[e].in[0] <== etick[e];
+        pickBefore[e].in[1] <== ticks;
+        prePickFlag[e] <== isPick[e] * pickBefore[e].out;
+        prePick += prePickFlag[e];
+    }
+    component killBefore[NK];
+    signal preKillFlag[NK];
+    var preKill = 0;
+    for (var k = 0; k < NK; k++) {
+        killBefore[k] = LessThan(12);
+        killBefore[k].in[0] <== khit[k];
+        killBefore[k].in[1] <== ticks;
+        preKillFlag[k] <== kact[k] * killBefore[k].out;
+        preKill += preKillFlag[k];
+    }
+    signal preRawScore <== preScoreQ + 50 * prePick + 25 * preKill;
+    component preRawBits = Num2Bits(13);
+    preRawBits.in <== preRawScore;
+    component preRawLtCap = LessThan(13);
+    preRawLtCap.in[0] <== preRawScore;
+    preRawLtCap.in[1] <== 1500;
+    scoreCapped.out * (1 - preRawLtCap.out) === 0;
 
     // run end: survived => ticks = 3600; died => ticks = fatal-entry tick;
     // score-capped non-death runs may end early.

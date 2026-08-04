@@ -15,6 +15,9 @@ const NI: usize = MAX_SCHED_ITEMS; // 56
 const NJ: usize = MAX_JUMPS; // 160
 const NE: usize = MAX_FORM_EVENTS; // 64
 const NK: usize = MAX_KILLS; // 32
+// Schedule spacing and fixed projectile travel bound each class to five
+// candidates. The sixth slot proves the boundary; neither side truncates.
+const NFC: usize = 6;
 const TPAD: u32 = 4000;
 
 struct Entry {
@@ -101,6 +104,80 @@ fn form_vidx(entries: &[Entry], t: u32) -> usize {
 
 fn tri_qr(p: u32) -> (u32, u32) {
     (p / BAT_PERIOD, p % BAT_PERIOD)
+}
+
+fn collision_class_witness<Spawn, Edges, Phase>(
+    active: bool,
+    fire_tick: u32,
+    count: usize,
+    capacity: usize,
+    spawn_at: Spawn,
+    edges_at: Edges,
+    phase_at: Phase,
+) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>)
+where
+    Spawn: Fn(usize) -> u32,
+    Edges: Fn(usize, u32) -> (i64, i64),
+    Phase: Fn(usize, u32) -> u32,
+{
+    let mut selectors = vec![0i64; NFC * (capacity + 1)];
+    let mut first = vec![i64::from(TPAD); NFC];
+    let mut tq = vec![0i64; 2 * NFC];
+    let mut tr = vec![0i64; 2 * NFC];
+    if !active {
+        return (selectors, first, tq, tr);
+    }
+
+    let end = fire_tick + FIREBALL_LIFE - 1;
+    let mut idx = count;
+    for i in 0..count {
+        let anchor = fire_tick.max(spawn_at(i).min(end));
+        let (_, right) = edges_at(i, anchor);
+        if fireball_x100(fire_tick, anchor) < right {
+            idx = i;
+            break;
+        }
+    }
+
+    let mut required = true;
+    for slot in 0..NFC {
+        if !required {
+            break;
+        }
+        assert!(idx <= capacity, "collision candidate selector overflow");
+        selectors[slot * (capacity + 1) + idx] = 1;
+
+        if idx < count && spawn_at(idx) <= end {
+            let base = fire_tick.max(spawn_at(idx));
+            let enter = (base..=end)
+                .find(|&t| {
+                    let (left, _) = edges_at(idx, t);
+                    left < fireball_x100(fire_tick, t) + i64::from(FIREBALL_SIZE) * FP100
+                })
+                .expect("spawned obstacle must enter the fireball path before its lifetime ends");
+            first[slot] = i64::from(enter);
+
+            for d in 0..2usize {
+                let t = enter + d as u32;
+                let (left, right) = edges_at(idx, t);
+                let fire_left = fireball_x100(fire_tick, t);
+                let fire_right = fire_left + i64::from(FIREBALL_SIZE) * FP100;
+                if fire_left < right && left < fire_right {
+                    let (q, r) = tri_qr(phase_at(idx, t));
+                    tq[2 * slot + d] = i64::from(q);
+                    tr[2 * slot + d] = i64::from(r);
+                }
+            }
+            idx += 1;
+        } else {
+            required = false;
+        }
+    }
+    assert!(
+        !required,
+        "more than five fireball collision candidates; increase NFC"
+    );
+    (selectors, first, tq, tr)
 }
 
 struct J(String);
@@ -416,7 +493,67 @@ pub fn build_input_json(sim: &ZkSim, acct: &[u128; 6]) -> String {
     j.arr("ktq", &ktq);
     j.arr("ktr", &ktr);
 
-    // ---- ground obstacles ----
+    let mut kgsel = Vec::with_capacity(NK);
+    let mut kbsel = Vec::with_capacity(NK);
+    let mut kgfirst = Vec::with_capacity(NK);
+    let mut kbfirst = Vec::with_capacity(NK);
+    let mut kgq = Vec::with_capacity(NK);
+    let mut kgr = Vec::with_capacity(NK);
+    let mut kbq = Vec::with_capacity(NK);
+    let mut kbr = Vec::with_capacity(NK);
+    for kill in kills
+        .iter()
+        .copied()
+        .map(Some)
+        .chain(core::iter::repeat(None))
+        .take(NK)
+    {
+        let active = kill.is_some();
+        let fire_tick = kill.map_or(TPAD, |event| event.fire_tick);
+        let (gsel, gfirst, gq, gr) = collision_class_witness(
+            active,
+            fire_tick,
+            sched.ground_count,
+            NG,
+            |idx| sched.ground[idx].spawn_tick,
+            |idx, t| {
+                let g = sched.ground[idx];
+                let x = world_x100(OBS_X0_100, g.spawn_tick, t);
+                (x + 4 * FP100, x + i64::from(g.w - 4) * FP100)
+            },
+            |_, _| 0,
+        );
+        let (bsel, bfirst, bq, br) = collision_class_witness(
+            active,
+            fire_tick,
+            sched.bat_count,
+            NB,
+            |idx| sched.bats[idx].spawn_tick,
+            |idx, t| {
+                let b = sched.bats[idx];
+                let x = world_x100(OBS_X0_100, b.spawn_tick, t);
+                (x, x + i64::from(BAT_W) * FP100)
+            },
+            |idx, t| sched.bats[idx].phase0 + t - sched.bats[idx].spawn_tick,
+        );
+        kgsel.push(gsel);
+        kbsel.push(bsel);
+        kgfirst.push(gfirst);
+        kbfirst.push(bfirst);
+        kgq.push(gq);
+        kgr.push(gr);
+        kbq.push(bq);
+        kbr.push(br);
+    }
+    j.arr2("kgsel", &kgsel);
+    j.arr2("kbsel", &kbsel);
+    j.arr2("kgfirst", &kgfirst);
+    j.arr2("kbfirst", &kbfirst);
+    j.arr2("kgq", &kgq);
+    j.arr2("kgr", &kgr);
+    j.arr2("kbq", &kbq);
+    j.arr2("kbr", &kbr);
+
     let wt = |t: u32| -> i64 {
         if t >= T_NONE {
             i64::from(TPAD)
@@ -424,6 +561,30 @@ pub fn build_input_json(sim: &ZkSim, acct: &[u128; 6]) -> String {
             i64::from(t)
         }
     };
+
+    // ---- mandatory item pickups ----
+    j.arr(
+        "iw1",
+        &(0..NI).map(|i| wt(w.items[i].w1)).collect::<Vec<_>>(),
+    );
+    j.arr(
+        "iw2",
+        &(0..NI).map(|i| wt(w.items[i].w2)).collect::<Vec<_>>(),
+    );
+    j.arr2(
+        "ijsel",
+        &(0..NI)
+            .map(|i| {
+                if i < sched.item_count && w.items[i].w1 <= ticks {
+                    onehot(NJ + 1, Some(last_jump_vidx(sim, w.items[i].w1)))
+                } else {
+                    onehot(NJ + 1, None)
+                }
+            })
+            .collect::<Vec<_>>(),
+    );
+
+    // ---- ground obstacles ----
     j.arr(
         "gw1",
         &(0..NG).map(|i| wt(w.ground[i].w1)).collect::<Vec<_>>(),
@@ -524,6 +685,9 @@ pub fn build_input_json(sim: &ZkSim, acct: &[u128; 6]) -> String {
     let denom = i64::from(FP) * 100 * 50; // 1_280_000
     j.num("scoreQ", dt / denom);
     j.num("scoreR", dt % denom);
+    let pre_dt = d100(ticks.saturating_sub(1));
+    j.num("preScoreQ", pre_dt / denom);
+    j.num("preScoreR", pre_dt % denom);
 
     j.finish()
 }
