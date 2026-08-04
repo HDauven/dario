@@ -5,10 +5,14 @@
 //! `[w1, w2]` (contiguous because obstacle x is strictly decreasing) and a
 //! clearance interval `[a, b]` that the circuit must prove collision-free:
 //!
-//! - `Cleared`:      b = min(w2, T)
-//! - `Killed(th)`:   b = min(w2, T, th - 1)  (removed by fireball at th)
+//! - `Cleared`:      b = min(w2, T, form-cap cutoff)
+//! - `Killed(th)`:   b = min(w2, T, th - 1, form-cap cutoff)
 //! - `Damaged(td)`:  b = td - 1              (collision happened at td)
 //! - `InvulnTouch(ti)`: b = ti - 1           (destroyed harmlessly at ti)
+//!
+//! The form-cap cutoff is `T` unless all `MAX_FORM_EVENTS` entries were used;
+//! then it is one tick before the final recorded event. Rust suppresses player
+//! collisions once that shared log is full.
 //!
 //! If `b < a` the obstacle needs no clearance proof (status/exempt). Ground
 //! obstacles additionally get the index of the jump whose airborne interval
@@ -117,6 +121,26 @@ impl RunWitness {
     pub fn extract(sim: &ZkSim) -> Self {
         let sched = sim.schedule();
         let t_end = sim.ticks();
+        let form_event_count = sim.pickup_count + sim.damage_count;
+        assert!(
+            form_event_count <= MAX_FORM_EVENTS,
+            "form-event log exceeds circuit capacity"
+        );
+        let collision_end = if form_event_count == MAX_FORM_EVENTS {
+            let last_pickup = if sim.pickup_count == 0 {
+                0
+            } else {
+                sim.pickups[sim.pickup_count - 1].tick
+            };
+            let last_damage = if sim.damage_count == 0 {
+                0
+            } else {
+                sim.damages[sim.damage_count - 1].tick
+            };
+            last_pickup.max(last_damage).saturating_sub(1)
+        } else {
+            t_end
+        };
 
         let mut ground = [ObsWitness::default(); MAX_GROUND];
         for (i, ow) in ground.iter_mut().enumerate().take(sched.ground_count) {
@@ -132,7 +156,7 @@ impl RunWitness {
                 (g.w as i64 - 4) * FP100,
                 horizon,
             );
-            *ow = obs_witness(win, sim.ground_status()[i], t_end);
+            *ow = obs_witness(win, sim.ground_status()[i], t_end, collision_end);
         }
         for ow in ground.iter_mut().skip(sched.ground_count) {
             ow.status = 4;
@@ -152,7 +176,7 @@ impl RunWitness {
                 _ => t_end,
             };
             let win = overlap_window(OBS_X0_100, b.spawn_tick, 0, (BAT_W as i64) * FP100, horizon);
-            *ow = obs_witness(win, sim.bat_status()[i], t_end);
+            *ow = obs_witness(win, sim.bat_status()[i], t_end, collision_end);
         }
         for ow in bats.iter_mut().skip(sched.bat_count) {
             ow.status = 4;
@@ -237,14 +261,12 @@ impl RunWitness {
             if let Some(ev) = ev {
                 form = dario_fsm::transition(form, ev);
             }
-            if n < MAX_FORM_EVENTS {
-                form_events[n] = FormEv {
-                    tick,
-                    kind,
-                    form_after: form as u32,
-                };
-                n += 1;
-            }
+            form_events[n] = FormEv {
+                tick,
+                kind,
+                form_after: form as u32,
+            };
+            n += 1;
         }
 
         RunWitness {
@@ -266,7 +288,12 @@ impl RunWitness {
     }
 }
 
-fn obs_witness(win: Option<(u32, u32)>, status: ObsStatus, t_end: u32) -> ObsWitness {
+fn obs_witness(
+    win: Option<(u32, u32)>,
+    status: ObsStatus,
+    t_end: u32,
+    collision_end: u32,
+) -> ObsWitness {
     let (w1, w2) = match win {
         Some(w) => w,
         None => {
@@ -282,10 +309,14 @@ fn obs_witness(win: Option<(u32, u32)>, status: ObsStatus, t_end: u32) -> ObsWit
         }
     };
     let (code, b, ev) = match status {
-        ObsStatus::Cleared => (0, w2.min(t_end), T_NONE),
-        ObsStatus::Killed(th) => (1, w2.min(t_end).min(th.saturating_sub(1)), th),
-        ObsStatus::Damaged(td) => (2, td.saturating_sub(1), td),
-        ObsStatus::InvulnTouch(ti) => (3, ti.saturating_sub(1), ti),
+        ObsStatus::Cleared => (0, w2.min(t_end).min(collision_end), T_NONE),
+        ObsStatus::Killed(th) => (
+            1,
+            w2.min(t_end).min(th.saturating_sub(1)).min(collision_end),
+            th,
+        ),
+        ObsStatus::Damaged(td) => (2, td.saturating_sub(1).min(collision_end), td),
+        ObsStatus::InvulnTouch(ti) => (3, ti.saturating_sub(1).min(collision_end), ti),
     };
     ObsWitness {
         status: code,
@@ -458,6 +489,35 @@ mod tests {
             let ow = w.bats[i];
             if ow.status != 4 && ow.b >= ow.a {
                 assert!(ow.b - ow.a < 8, "bat window too long: {}", ow.b - ow.a + 1);
+            }
+        }
+    }
+
+    #[test]
+    fn full_form_event_log_truncates_player_collision_clearance() {
+        let mut sim = ZkSim::new(1);
+        sim.ticks = MAX_TICKS;
+        sim.over = true;
+        sim.pickup_count = MAX_PICKUPS;
+        sim.damage_count = MAX_DAMAGES;
+        for pickup in sim.pickups.iter_mut().take(sim.pickup_count) {
+            pickup.tick = 100;
+            pickup.item_idx = 0;
+        }
+        for damage in sim.damages.iter_mut().take(sim.damage_count) {
+            damage.tick = 100;
+        }
+
+        let witness = RunWitness::extract(&sim);
+        assert_eq!(witness.form_event_count, MAX_FORM_EVENTS);
+        for obstacle in witness
+            .ground
+            .iter()
+            .take(sim.schedule().ground_count)
+            .chain(witness.bats.iter().take(sim.schedule().bat_count))
+        {
+            if obstacle.status != 4 {
+                assert!(obstacle.b <= 99);
             }
         }
     }

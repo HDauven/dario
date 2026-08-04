@@ -1033,7 +1033,9 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     component ilj[NI];
     component itauEnd[NI][8];
     component itauTicks[NI][8];
+    component itauCapacity[NI][8];
     signal ig1[NI][8];
+    signal ig2[NI][8];
     signal ig[NI][8];
     component ipy[NI][8];
     component iyt[NI][8];
@@ -1124,8 +1126,16 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
             itauTicks[i][d] = LessEqThan(13);
             itauTicks[i][d].in[0] <== iw1[i] + d;
             itauTicks[i][d].in[1] <== ticks;
+            // An inactive last timeline slot is padded at tick 4000. If the
+            // slot is active, its tick is when the shared 64-entry form log
+            // becomes full. Pickups run before player collisions, so a pickup
+            // remains recordable through that tick.
+            itauCapacity[i][d] = LessEqThan(13);
+            itauCapacity[i][d].in[0] <== iw1[i] + d;
+            itauCapacity[i][d].in[1] <== etick[NE - 1];
             ig1[i][d] <== iactv[i] * itauEnd[i][d].out;
-            ig[i][d] <== ig1[i][d] * itauTicks[i][d].out;
+            ig2[i][d] <== ig1[i][d] * itauTicks[i][d].out;
+            ig[i][d] <== ig2[i][d] * itauCapacity[i][d].out;
 
             ipy[i][d] = PlayerY2();
             ipy[i][d].t <== iw1[i] + d;
@@ -1612,11 +1622,13 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     component gcW[NG];
     signal gmT[NG];
     component gcE[NG];
+    component gcCap[NG];
     signal gm2[NG];
     signal gb1[NG];
     signal gb2[NG];
     signal gb3[NG];
     signal gB[NG];
+    signal gBCap[NG];
     component gncr[NG];
     signal gnc[NG];
     component gjdot[NG];
@@ -1683,6 +1695,12 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
 
         // clearance range end b by status:
         //   alive: min(w2, T); killed: min(w2, T, evt-1); damaged/touched: evt-1.
+        // Once the shared form-event log fills, Rust ignores later player
+        // collisions. The last active event is at etick[NE-1]; if that event
+        // is a pickup the same-tick collision is already suppressed, while a
+        // damage/touch event's own obstacle already ends at evt-1. Truncating
+        // every clearance range at the preceding tick covers both cases and
+        // Rust's first-collision scan order for other same-tick obstacles.
         gcW[i] = LessEqThan(12);
         gcW[i].in[0] <== gw2[i];
         gcW[i].in[1] <== ticks;
@@ -1695,10 +1713,14 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         gb2[i] <== gs[i][1] * gm2[i];
         gb3[i] <== (gs[i][2] + gs[i][3]) * (gevt[i] - 1);
         gB[i] <== gb1[i] + gb2[i] + gb3[i];
+        gcCap[i] = LessEqThan(13);
+        gcCap[i].in[0] <== etick[NE - 1] - eact[NE - 1];
+        gcCap[i].in[1] <== gB[i];
+        gBCap[i] <== gcCap[i].out * (etick[NE - 1] - eact[NE - 1] - gB[i]) + gB[i];
 
         gncr[i] = LessThan(13);
         gncr[i].in[0] <== gw1[i];
-        gncr[i].in[1] <== gB[i] + 1;
+        gncr[i].in[1] <== gBCap[i] + 1;
         gnc[i] <== gncr[i].out * (1 - gs[i][4]);
 
         // a single covering jump must clear the whole clearance range.
@@ -1728,7 +1750,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         gle1[i].in[1] <== gw1[i];
         gnc[i] * (1 - gle1[i].out) === 0;
         gle2[i] = LessEqThan(13);
-        gle2[i].in[0] <== gB[i] + 1;
+        gle2[i].in[0] <== gBCap[i] + 1;
         gle2[i].in[1] <== gCjt[i] + gCland[i];
         gnc[i] * (1 - gle2[i].out) === 0;
 
@@ -1744,7 +1766,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         gdispA[i].n <== gnAg[i];
         gdispA[i].isSup <== gjub[i].out[18];
         gdispA[i].isCap <== gjub[i].out[19];
-        gnB0[i] <== gnc[i] * (gB[i] - gCjt[i]);
+        gnB0[i] <== gnc[i] * (gBCap[i] - gCjt[i]);
         gzB[i] = IsZero();
         gzB[i].in <== gnB0[i];
         gnBg[i] <== gnB0[i] + gzB[i].out;
@@ -1782,11 +1804,13 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
     component bcW[NB];
     signal bmT[NB];
     component bcE[NB];
+    component bcCap[NB];
     signal bm2[NB];
     signal bb1[NB];
     signal bb2[NB];
     signal bb3[NB];
     signal bB[NB];
+    signal bBCap[NB];
     component bncr[NB];
     signal bnc[NB];
     component bwlen[NB];
@@ -1853,10 +1877,14 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         bb2[j] <== bs[j][1] * bm2[j];
         bb3[j] <== (bs[j][2] + bs[j][3]) * (bevt[j] - 1);
         bB[j] <== bb1[j] + bb2[j] + bb3[j];
+        bcCap[j] = LessEqThan(13);
+        bcCap[j].in[0] <== etick[NE - 1] - eact[NE - 1];
+        bcCap[j].in[1] <== bB[j];
+        bBCap[j] <== bcCap[j].out * (etick[NE - 1] - eact[NE - 1] - bB[j]) + bB[j];
 
         bncr[j] = LessThan(13);
         bncr[j].in[0] <== bw1[j];
-        bncr[j].in[1] <== bB[j] + 1;
+        bncr[j].in[1] <== bBCap[j] + 1;
         bnc[j] <== bncr[j].out * (1 - bs[j][4]);
 
         // overlap window is at most 8 ticks (locked by dash_zk tests).
@@ -1878,7 +1906,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         for (var d = 0; d < 8; d++) {
             btau[j][d] = LessEqThan(13);
             btau[j][d].in[0] <== bw1[j] + d;
-            btau[j][d].in[1] <== bB[j];
+            btau[j][d].in[1] <== bBCap[j];
             bg[j][d] <== bnc[j] * btau[j][d].out;
 
             bpy[j][d] = PlayerY2();

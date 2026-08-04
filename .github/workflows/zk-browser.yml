@@ -1,0 +1,53 @@
+name: Browser ZK circuit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/zk-browser.yml"
+      - "Makefile"
+      - "dash_zk/**"
+      - "zk_browser/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/zk-browser.yml"
+      - "Makefile"
+      - "dash_zk/**"
+      - "zk_browser/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  soundness-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-02-27
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: zk_browser/package-lock.json
+
+      - name: Install Circom 2.2.2
+        run: |
+          curl --fail --location --retry 3 \
+            --output /tmp/circom-linux-amd64 \
+            https://github.com/iden3/circom/releases/download/v2.2.2/circom-linux-amd64
+          printf '%s  %s\n' \
+            d7389838c5b7d70ea974824027ba4419f7f6bf327c39ac81e7133aba8a4d506f \
+            /tmp/circom-linux-amd64 | sha256sum --check
+          chmod +x /tmp/circom-linux-amd64
+          sudo mv /tmp/circom-linux-amd64 /usr/local/bin/circom
+
+      - name: Run circuit soundness regressions
+        run: make zk-browser-test

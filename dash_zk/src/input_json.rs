@@ -15,6 +15,7 @@ const NI: usize = MAX_SCHED_ITEMS; // 56
 const NJ: usize = MAX_JUMPS; // 160
 const NE: usize = MAX_FORM_EVENTS; // 64
 const NK: usize = MAX_KILLS; // 32
+
 // Schedule spacing and fixed projectile travel bound each class to five
 // candidates. The sixth slot proves the boundary; neither side truncates.
 const NFC: usize = 6;
