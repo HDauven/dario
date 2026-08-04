@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
@@ -32,7 +32,7 @@ jobs:
           toolchain: nightly-2026-02-27
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -44,7 +44,7 @@ jobs:
             --output /tmp/circom-linux-amd64 \
             https://github.com/iden3/circom/releases/download/v2.2.2/circom-linux-amd64
           printf '%s  %s\n' \
-            d7389838c5b7d70ea974824027ba4419f7f6bf327c39ac81e7133aba8a4d506f \
+            f3d8d1fdbc123779b80e210c909ee941d7a1e130c70365524646b48b8b0fe9d5 \
             /tmp/circom-linux-amd64 | sha256sum --check
           chmod +x /tmp/circom-linux-amd64
           sudo mv /tmp/circom-linux-amd64 /usr/local/bin/circom
