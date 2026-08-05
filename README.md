@@ -37,7 +37,7 @@ The project is organized in these main components:
 - `dash_zk`: A `no_std`, 30 Hz variant of the sim whose physics are closed-form, so runs can be proven by a circom circuit **directly in the browser**. Also generates the obstacle schedule from the seed and extracts the ZK witness. The same code runs in the browser (wasm) and in the contract.
 - `dash_web`: A thin wasm-bindgen wrapper exposing the sims to the web app.
 - `zk`: A separate cargo workspace with the RISC Zero guest program (replays a recorded input trace) and the `dash-prover` CLI (proves runs, exports contract verification constants for both proving paths, and verifies browser proofs through a contract-equivalent pipeline).
-- `zk_browser`: The circom circuit (`circuits/dash_zk.circom`, ~421k constraints) proving a full Dash run — jump parabolas, obstacle clearance windows, bat sine-hover collision, fireball kills, FSM form transitions, item pickups and score — plus the snarkjs → ark proof converter.
+- `zk_browser`: The circom circuit (`circuits/dash_zk.circom`, ~1.0M constraints) proving a full Dash run — jump parabolas, obstacle clearance windows, bat sine-hover collision, fireball kills, FSM form transitions, item pickups and score — plus the snarkjs → ark proof converter.
 - `tests`: A test suite for the smart contract, including on-chain verification of real checked-in Groth16 proofs from both proving paths.
 - `web`: A bundled playable Dario demo, ported from the `@dusk/connect`
   example and wired to this contract's generated data-driver.
@@ -122,6 +122,13 @@ sha256sum \
   zk_browser/build/dash/dash_zk_js/dash_zk.wasm \
   zk_browser/build/dash/dash_zk_final.zkey
 ```
+
+Run `make zk-browser-test` before setup to compile the current circuit and
+exercise Rust-exported controls, three positive-derived mutations, and the
+digest-pinned supplied omitted-pickup PoC. Each malformed input must still
+witness against a circuit with only its target assertion disabled before the
+production circuit is required to reject it. The same target runs as a
+pull-request check.
 
 ## ZK proof of gameplay — RISC Zero (native)
 

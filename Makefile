@@ -4,8 +4,9 @@ ZK_BROWSER_ARTIFACT_TAG := zk-browser-v1
 ZK_BROWSER_ARTIFACT_URL := https://github.com/HDauven/dario/releases/download/$(ZK_BROWSER_ARTIFACT_TAG)
 ZK_BROWSER_WASM_SHA256 := fb3908202b44ae3062f95e4261c30d69d8d514d586731b1f33cf9a95ab46fe48
 ZK_BROWSER_ZKEY_SHA256 := dd5d6f37db89880d461e2ddc9c99cadb48b46bd6e10e91bb83c5529d4819c5fa
-ZK_BROWSER_PTAU := zk_browser/ptau/powersOfTau28_hez_final_19.ptau
-ZK_BROWSER_PTAU_SHA256 := 3f428d1a407e4704ef906960e000b03089e5e6ec29bf65b07bb5e3de005f4700
+ZK_BROWSER_PTAU_NAME := powersOfTau28_hez_final_21.ptau
+ZK_BROWSER_PTAU := zk_browser/ptau/$(ZK_BROWSER_PTAU_NAME)
+ZK_BROWSER_PTAU_SHA256 := cdc7c94a6635bc91466d8c7d96faefe1d17ecc98a3596a748ca1e6c895f8c2b4
 
 contract: ## Build contract
 	@RUSTFLAGS="-C link-args=-zstack-size=65536" \
@@ -78,7 +79,7 @@ zk-browser-ptau: ## Download and verify the phase-1 powers-of-tau file when miss
 	@if ! printf '%s  %s\n' $(ZK_BROWSER_PTAU_SHA256) $(ZK_BROWSER_PTAU) | sha256sum --check --status 2>/dev/null; then \
 	  rm -f $(ZK_BROWSER_PTAU) $(ZK_BROWSER_PTAU).tmp; \
 	  curl --fail --location --retry 3 -o $(ZK_BROWSER_PTAU).tmp \
-	    https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_19.ptau; \
+	    https://storage.googleapis.com/zkevm/ptau/$(ZK_BROWSER_PTAU_NAME); \
 	  printf '%s  %s\n' $(ZK_BROWSER_PTAU_SHA256) $(ZK_BROWSER_PTAU).tmp | sha256sum --check --status; \
 	  mv $(ZK_BROWSER_PTAU).tmp $(ZK_BROWSER_PTAU); \
 	fi
@@ -89,12 +90,12 @@ zk-assets: zk-browser-artifacts ## Copy canonical circom wasm + proving key into
 	@cp $(ZK_BROWSER_ZKEY) web/public/zk/dash_zk_final.zkey
 	@echo "ZK artifacts copied to web/public/zk/"
 
-zk-browser-setup: zk-browser-ptau ## Compile the circuit and create fresh Groth16 keys (needs circom; downloads ~580MB ptau once)
+zk-browser-setup: zk-browser-ptau ## Compile circuit/create Groth16 keys (needs circom; downloads ~2.3GB ptau once)
 	@cd zk_browser && npm ci
 	@mkdir -p zk_browser/build/dash
 	@cd zk_browser && circom circuits/dash_zk.circom --r1cs --wasm -o build/dash -l node_modules
 	@cd zk_browser && node --max-old-space-size=8192 node_modules/.bin/snarkjs groth16 setup \
-	  build/dash/dash_zk.r1cs ptau/powersOfTau28_hez_final_19.ptau build/dash/dash_zk_0000.zkey
+	  build/dash/dash_zk.r1cs ptau/$(ZK_BROWSER_PTAU_NAME) build/dash/dash_zk_0000.zkey
 	@cd zk_browser && node node_modules/.bin/snarkjs zkey contribute \
 	  build/dash/dash_zk_0000.zkey build/dash/dash_zk_final.zkey --name="dario" -e="dario dash entropy"
 	@cd zk_browser && node node_modules/.bin/snarkjs zkey export verificationkey \
@@ -102,6 +103,13 @@ zk-browser-setup: zk-browser-ptau ## Compile the circuit and create fresh Groth1
 	@cd zk && cargo run --release -p dash-prover -- export-snarkjs-vkey \
 	  ../zk_browser/build/dash/vkey.json ../contract/assets dash_zk
 	@echo "Circuit + keys ready. Run 'make zk-assets' and rebuild the contract."
+
+zk-browser-test: ## Compile the circuit and run positive-derived soundness regressions (needs circom)
+	@cd zk_browser && npm ci
+	@mkdir -p zk_browser/build/test
+	@cd zk_browser && circom circuits/dash_zk.circom --wasm -o build/test -l node_modules
+	@node zk_browser/js/soundness-regressions.mjs \
+	  zk_browser/build/test/dash_zk_js/dash_zk.wasm
 
 dash-web: ## Build the deterministic sim to wasm for the web app
 	@wasm-pack build dash_web \
@@ -128,7 +136,7 @@ zk-constants: zk ## Regenerate contract verification constants from the guest
 prove: zk ## Prove a recorded run (requires x86 + Docker for Groth16 wrap)
 	@cd zk && ./target/release/dash-prover prove $(abspath $(RUN)) $(abspath $(OUT))
 
-test: contract moonlight-router ## Run all tests
+test: zk-browser-test contract moonlight-router ## Run all tests
 	@cargo test \
 	  --manifest-path=tests/Cargo.toml \
 	  --all-features \
@@ -143,4 +151,4 @@ test: contract moonlight-router ## Run all tests
 	  --manifest-path=dash_zk/Cargo.toml \
 	  --color=always
 
-.PHONY: contract moonlight-router data-driver web-assets zk-assets zk-browser-artifacts zk-browser-ptau zk-browser-setup dash-web web web-build zk zk-constants prove test
+.PHONY: contract moonlight-router data-driver web-assets zk-assets zk-browser-artifacts zk-browser-ptau zk-browser-setup zk-browser-test dash-web web web-build zk zk-constants prove test
