@@ -1164,7 +1164,7 @@ template DashZK(NG, NB, NI, NJ, NE, NK) {
         }
 
         iPickCount[i] === iseen[i][8];
-        iPickTick[i] === ifdot[i].out;
+        iPickCount[i] * (iPickTick[i] - ifdot[i].out) === 0;
     }
 
     // ================= section 5: timeline entry checks =================

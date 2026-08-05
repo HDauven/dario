@@ -5,6 +5,10 @@ on:
     paths:
       - ".github/workflows/zk-browser.yml"
       - "Makefile"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "dario_fsm/**"
       - "dash_zk/**"
       - "zk_browser/**"
   push:
@@ -12,6 +16,10 @@ on:
     paths:
       - ".github/workflows/zk-browser.yml"
       - "Makefile"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "dario_fsm/**"
       - "dash_zk/**"
       - "zk_browser/**"
   workflow_dispatch:

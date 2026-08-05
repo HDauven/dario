@@ -1,13 +1,39 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 
 const NG = 128;
 const BAT_PERIOD = 36;
 const SCORE_DENOMINATOR = 1_280_000;
+
+// The supplied seed-42 omitted-pickup PoC (source SHA-256
+// 305e8676a25b4ff63e000abd23abbe304a9610e18d52ae83555ecc7eeef76735)
+// upgraded once to the current input schema. Its SHA-256 as uncompressed
+// canonical JSON is pinned so the focused control below cannot silently drift
+// with helper code.
+const OMITTED_PICKUP_SHA256 =
+  "169a44d9cc99dbae918392250396ab0429f473f43b32fcbbe639cdbad47df812";
+const OMITTED_PICKUP_FIXTURE = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "fixtures",
+  "omitted-pickup-seed42.json.gz.base64",
+);
+
+function omittedPickupFixture() {
+  const encoded = readFileSync(OMITTED_PICKUP_FIXTURE, "utf8").trim();
+  const json = gunzipSync(Buffer.from(encoded, "base64"));
+  assert.equal(
+    createHash("sha256").update(json).digest("hex"),
+    OMITTED_PICKUP_SHA256,
+    "omitted-pickup fixture digest mismatch",
+  );
+  return JSON.parse(json);
+}
 
 function n(value) {
   return Number(value);
@@ -213,18 +239,32 @@ for (const seed of [4, 19, 42]) {
   console.log(`ok: honest seed ${seed}`);
 }
 
-const pickupControl = compileControl(
-  "pickup_control",
-  "iPickTick[i] === ifdot[i].out;",
-  "iPickTick[i] * 0 === 0;",
+const pickupTimingControl = compileControl(
+  "pickup_timing_control",
+  "iPickCount[i] * (iPickTick[i] - ifdot[i].out) === 0;",
+  "iPickCount[i] * (iPickTick[i] - ifdot[i].out) * 0 === 0;",
 );
 const delayedPickup = findControlledMutation(
   "delayed pickup",
   delayedPickupCandidates(honest.get(42)),
-  pickupControl,
+  pickupTimingControl,
 );
 expectRejected(patchedWasm, delayedPickup.input, "delayed-pickup-patched");
 console.log(`ok: rejected isolated delayed pickup (${delayedPickup.description})`);
+
+const pickupCompletenessControl = compileControl(
+  "pickup_completeness_control",
+  "iPickCount[i] === iseen[i][8];",
+  "iPickCount[i] * 0 === 0;",
+);
+const omittedPickup = omittedPickupFixture();
+expectWitness(
+  pickupCompletenessControl,
+  omittedPickup,
+  "omitted-pickup-completeness-control",
+);
+expectRejected(patchedWasm, omittedPickup, "omitted-pickup-patched");
+console.log("ok: rejected isolated omitted pickup from supplied seed-42 PoC");
 
 const collisionControl = compileControl(
   "collision_control",

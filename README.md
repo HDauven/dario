@@ -124,10 +124,11 @@ sha256sum \
 ```
 
 Run `make zk-browser-test` before setup to compile the current circuit and
-exercise positive Rust-exported controls plus isolated soundness mutations.
-Each mutation must still witness against a circuit with only its target
-assertion disabled before the production circuit is required to reject it.
-The same target runs as a pull-request check.
+exercise Rust-exported controls, three positive-derived mutations, and the
+digest-pinned supplied omitted-pickup PoC. Each malformed input must still
+witness against a circuit with only its target assertion disabled before the
+production circuit is required to reject it. The same target runs as a
+pull-request check.
 
 ## ZK proof of gameplay — RISC Zero (native)
 
